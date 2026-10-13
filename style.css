@@ -34,3 +34,68 @@
 .dialog-danger{width:100%;margin-top:8px;border-color:#673846;background:#301a26;color:#ffbdc9}
 .member-kick{flex:0 0 auto;padding:7px 9px;border-color:#673846;background:#301a26;color:#ffbdc9;font-size:10px}
 .dialog-secondary:disabled,.dialog-danger:disabled,.member-kick:disabled{opacity:.55;cursor:wait}
+
+
+/* Settings panel */
+.settings-chat{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text);text-align:left;font-size:12px}
+.settings-chat span{font-size:16px;color:var(--muted)}
+.settings-chat:hover{background:var(--panel2)}
+.settings-form{display:flex;flex-direction:column;gap:14px}
+.settings-field{display:flex;flex-direction:column;gap:7px}
+.settings-field-title{font-size:12px;color:var(--muted)}
+.settings-check{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.5;color:var(--text)}
+.settings-check input{accent-color:var(--blue);margin-top:2px}
+.settings-warning{font-size:11px!important;color:var(--muted)!important;border-left:3px solid var(--blue);padding-left:10px}
+.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.settings-actions .dialog-primary,.settings-actions .dialog-secondary{margin:0;width:100%}
+
+/* Typography and density preferences */
+body[data-font-size="small"] .message,body[data-font-size="small"] .composer textarea{font-size:12px}
+body[data-font-size="large"] .message,body[data-font-size="large"] .composer textarea{font-size:15px}
+body[data-font-size="large"] .chat-meta strong,body[data-font-size="large"] .profile-meta strong{font-size:14px}
+body.compact-mode .sidebar{padding-top:16px}
+body.compact-mode .brand{padding-bottom:16px}
+body.compact-mode .section-label{padding-top:16px;padding-bottom:8px}
+body.compact-mode .chat-item{padding:7px 9px}
+body.compact-mode .notice{margin-top:10px;padding:8px 11px}
+body.compact-mode .messages{gap:8px;padding-top:14px;padding-bottom:14px}
+body.compact-mode .composer{padding:8px 10px 7px}
+body.compact-mode .footer-note{padding-top:8px;padding-bottom:9px}
+
+/* FunPay-inspired yellow/charcoal theme. The Tor option preserves the original look. */
+body[data-theme="funpay"]{
+  color-scheme:dark;
+  --bg:#171717;--panel:#202020;--panel2:#2a2a2a;--line:#3a3832;--text:#f3f0e7;--muted:#aaa69b;--blue:#f0c419;--blue2:#d9a900;--bubble:#292821;
+}
+body[data-theme="funpay"] .app-shell,body[data-theme="funpay"] body{background:var(--bg)}
+body[data-theme="funpay"] .brand-mark,body[data-theme="funpay"] .welcome-icon{background:linear-gradient(145deg,#ffdf52,#e0aa00);box-shadow:0 6px 24px #f0c41922;color:#242016}
+body[data-theme="funpay"] .beta{color:#f8dc67;border-color:#65551e}
+body[data-theme="funpay"] .new-chat{background:#393116;border-color:#7a641b;color:#fff3bd}
+body[data-theme="funpay"] .new-chat span{color:#ffdf52}
+body[data-theme="funpay"] .join-chat,body[data-theme="funpay"] .settings-chat{background:#26251f;border-color:#403d2e;color:#e7dfc3}
+body[data-theme="funpay"] .chat-item:hover,body[data-theme="funpay"] .profile-button:hover{background:#292820}
+body[data-theme="funpay"] .chat-item.active{background:#332f1e;border-color:#65551e}
+body[data-theme="funpay"] .avatar.saved,body[data-theme="funpay"] .current-chat-avatar{background:#3a341d;color:#ffdf69}
+body[data-theme="funpay"] .main-panel{background:radial-gradient(ellipse at 50% 0%,#2b281c 0%,var(--bg) 56%)}
+body[data-theme="funpay"] .topbar{background:#1d1d1dcc;border-bottom-color:#39362b}
+body[data-theme="funpay"] .mode-chip{border-color:#49432b;color:#e0d5a8}
+body[data-theme="funpay"] .notice{border-color:#5a4b1c;background:#292516;color:#e0d8b7}
+body[data-theme="funpay"] .notice span{color:#ffdf52}
+body[data-theme="funpay"] .welcome-pills span{border-color:#49432b;color:#d2c9a9}
+body[data-theme="funpay"] .message{background:linear-gradient(145deg,#806719,#5c4b17);border-color:#a48727;color:#fff9df}
+body[data-theme="funpay"] .message-time{color:#f4e6ad}
+body[data-theme="funpay"] .message.incoming{background:#292820;border-color:#454133;color:var(--text)}
+body[data-theme="funpay"] .composer{background:#20201d;border-color:#454133}
+body[data-theme="funpay"] .attach-button{background:#2b2a23;border-color:#484333;color:#e6dba9}
+body[data-theme="funpay"] .send-button{background:#e5b90d;color:#201b0a}
+body[data-theme="funpay"] .send-button:hover{background:#ffda36}
+body[data-theme="funpay"] .icon-button,body[data-theme="funpay"] .mobile-menu{background:#292820;border-color:#454133;color:#e7dfc3}
+body[data-theme="funpay"] .simple-dialog{background:#24231e;border-color:#51472a}
+body[data-theme="funpay"] .simple-dialog::backdrop{background:#090806cc}
+body[data-theme="funpay"] .dialog-input,body[data-theme="funpay"] .invite-code{background:#181814;border-color:#4a4432;color:#fff1b3}
+body[data-theme="funpay"] .dialog-primary{background:#d9ad00;color:#211b08}
+body[data-theme="funpay"] .dialog-primary:hover{background:#f0c419}
+body[data-theme="funpay"] .dialog-secondary,body[data-theme="funpay"] .attachment-action{background:#302d20;border-color:#50472a;color:#f1e6b9}
+body[data-theme="funpay"] .dialog-danger,body[data-theme="funpay"] .member-kick{background:#321f1c;border-color:#70402f;color:#ffc5b5}
+body[data-theme="funpay"] .settings-warning{border-left-color:#e5b90d}
+body[data-theme="funpay"] .settings-check input{accent-color:#e5b90d}
