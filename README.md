@@ -1,27 +1,7 @@
 # FunText
 
-FunText — прототип интерфейса мессенджера с тёмной темой и синими акцентами.
+Browser messenger prototype on GitHub Pages + Supabase.
 
-## Запуск
+Cloud chat setup: run `supabase/migrations/202610130001_funtext_chat.sql` in Supabase Dashboard → SQL Editor before using cloud chats.
 
-Откройте `index.html` в браузере. Сборка и установка зависимостей пока не нужны.
-
-## Файлы
-
-- `index.html` — структура интерфейса.
-- `style.css` — адаптивные стили.
-- `app.js` — локальные взаимодействия прототипа.
-
-## Текущий статус
-
-Это ранний UI-прототип:
-- можно создавать беседы в текущей вкладке;
-- можно отправлять тестовые сообщения в интерфейсе;
-- сообщения пока не сохраняются и не синхронизируются;
-- Supabase, регистрация, восстановление аккаунта, загрузка вложений, сквозное шифрование и Tor Mode ещё не подключены.
-
-**Не используйте прототип для секретной или чувствительной переписки.**
-
-## Безопасность конфигурации
-
-Публичный Supabase publishable key допустим во фронтенде только при корректных RLS-политиках и ограничениях доступа. Никогда не добавляйте в публичный репозиторий `service_role`, secret keys, пароли или другие серверные секреты.
+Current limits: no end-to-end encryption (E2EE), no Tor routing, no account recovery, and no file attachments yet. Do not send secrets or sensitive data.
