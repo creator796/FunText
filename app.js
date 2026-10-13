@@ -65,8 +65,8 @@ function openSettings() {
   const themeChoices = document.createElement("div");
   themeChoices.className = "theme-choices";
   const themeOptions = [
-    { value: "funpay", name: "FunPay", description: "Тёмно-синий стиль", mark: '<img class="theme-logo funpay-logo" src="https://funpay.com/img/layout/logo-funpay.svg" alt="" aria-hidden="true" loading="eager" referrerpolicy="no-referrer">' },
-    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<img class="theme-logo tor-logo" src="https://www.torproject.org/static/images/tor-browser/Browser_Icon.svg" alt="" aria-hidden="true" loading="eager" referrerpolicy="no-referrer">' }
+    { value: "funpay", name: "FunPay", description: "Тёмно-синий стиль", mark: '<span class="theme-logo funpay-logo" aria-hidden="true">F</span>' },
+    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<span class="theme-logo tor-logo" aria-hidden="true">Tor</span>' }
   ];
   const themeButtons = [];
   for (const item of themeOptions) {
@@ -192,7 +192,7 @@ async function openAttachment(file,download){
   try{
     const {data,error}=await sb.storage.from("ft-attachments").createSignedUrl(file.storage_path,90);if(error)throw error;
     if(!download && (/\.html?$/i.test(file.file_name)||file.content_type==="text/html")){
-      const response=await fetch(data.signedUrl,{cache:"no-store"});if(!response.ok)throw new Error("Не удалось загрузить HTML");
+      const response=await fetch(data.signedUrl,{cache:"no-store",referrerPolicy:"no-referrer"});if(!response.ok)throw new Error("Не удалось загрузить HTML");
       let doc=await response.text();
       const csp='<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data: blob:; style-src \'unsafe-inline\'; font-src data:; media-src data: blob:">';
       if(/<head[^>]*>/i.test(doc))doc=doc.replace(/<head[^>]*>/i,tag=>tag+csp);else doc=csp+doc;
