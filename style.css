@@ -247,3 +247,28 @@ body[data-theme="funpay"] .topbar{background:rgba(12,23,40,.76)}
   body[data-theme="tor"]::after{background:rgba(12,7,20,.78)}
   body[data-theme="funpay"]::after{background:rgba(5,12,24,.84)}
 }
+
+
+/* Reliable full-page Tor-style onion watermark (self-contained; no external image host). */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 500'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='40%25' r='65%25'%3E%3Cstop offset='0' stop-color='%23b98bff' stop-opacity='.34'/%3E%3Cstop offset='1' stop-color='%236f35a8' stop-opacity='.06'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='210' cy='248' rx='166' ry='180' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23b98bff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' opacity='.92'%3E%3Cpath d='M210 65 C177 65 155 92 157 124 C125 111 92 135 92 170 C61 180 51 215 70 244 C49 271 62 309 91 321 C91 359 123 382 153 371 C168 401 196 413 210 413 C224 413 252 401 267 371 C297 382 329 359 329 321 C358 309 371 271 350 244 C369 215 359 180 328 170 C328 135 295 111 263 124 C265 92 243 65 210 65 Z'/%3E%3Cpath d='M210 76 L210 405 M157 124 C177 157 185 191 185 225 M263 124 C243 157 235 191 235 225 M92 170 C127 191 145 221 151 252 M328 170 C293 191 275 221 269 252 M70 244 C112 254 138 278 151 309 M350 244 C308 254 282 278 269 309 M91 321 C129 321 151 338 166 365 M329 321 C291 321 269 338 254 365'/%3E%3C/g%3E%3Cpath d='M210 26 C195 42 192 55 210 70 C228 55 225 42 210 26 Z' fill='%23b98bff' opacity='.9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:center center;
+  background-size:min(64vmin, 620px) auto;
+  opacity:.72;
+  filter:saturate(1.05);
+}
+body[data-theme="tor"]::after{
+  background:linear-gradient(115deg,rgba(12,7,20,.60),rgba(12,7,20,.42) 48%,rgba(12,7,20,.60));
+}
+body[data-theme="tor"] .sidebar{background:rgba(23,18,34,.78)}
+body[data-theme="tor"] .main-panel{background:linear-gradient(180deg,rgba(16,13,24,.24),rgba(16,13,24,.48))}
+body[data-theme="tor"] .topbar{background:rgba(23,17,33,.58)}
+@media(max-width:720px){
+  body::before{background-size:min(88vw, 500px) auto;opacity:.56}
+}
