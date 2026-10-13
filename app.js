@@ -83,7 +83,7 @@ function drawChats(){
 }
 async function loadChats(){
   if(!sb||!user)return;
-  const {data,error}=await sb.from("ft_conversations").select("id,title,invite_code,created_at").order("created_at",{ascending:false});
+  const {data,error}=await sb.from("ft_conversations").select("id,title,invite_code,created_at,created_by").order("created_at",{ascending:false});
   if(error)throw error;chats=data||[];drawChats();
 }
 async function stopLive(){if(subscription&&sb){await sb.removeChannel(subscription);subscription=null;}}
@@ -160,7 +160,63 @@ $("#profileBtn").addEventListener("click",()=>{
   if(!user){dialogBox("Профиль",authError||"Подключаем авторизацию…","Повторить",initializeAuth);return;}
   dialogBox("Анонимный аккаунт","ID сессии: "+user.id+"\n\nСохраняй данные сайта, чтобы не потерять сессию. Восстановление аккаунта не реализовано. Сквозного шифрования нет — не отправляй секретные данные.","Скопировать ID",()=>navigator.clipboard.writeText(user.id));
 });
-$("#infoBtn").addEventListener("click",()=>dialogBox("О FunText","Облачные беседы работают через Supabase. «Избранное» хранится локально. Сейчас нет E2EE, Tor-маршрутизации или гарантии анонимности от инфраструктуры и сетевых операторов.","Понятно",()=>{}));
+async function showConversationInfo(){
+  if(activeId===SAVED){
+    dialogBox("О FunText","Облачные беседы работают через Supabase. «Избранное» хранится локально. Сквозного шифрования (E2EE) и Tor нет.","Понятно",()=>{});
+    return;
+  }
+  const chat=chats.find(c=>c.id===activeId);
+  if(!chat){fail("Беседа не найдена",new Error("Обнови список бесед и попробуй снова."));return;}
+  dialogContent.replaceChildren();
+  const heading=document.createElement("h2");heading.textContent="Информация о беседе";
+  const title=document.createElement("p");title.className="group-info-title";title.textContent=chat.title;
+  const codeLabel=document.createElement("label");codeLabel.className="group-info-label";codeLabel.textContent="Код приглашения";
+  const code=document.createElement("code");code.className="invite-code";code.textContent=chat.invite_code||"Код недоступен";
+  const codeActions=document.createElement("div");codeActions.className="group-info-actions";
+  const copy=document.createElement("button");copy.type="button";copy.className="dialog-primary";copy.textContent="Скопировать код";
+  copy.onclick=async()=>{try{await navigator.clipboard.writeText(chat.invite_code);copy.textContent="Скопировано";}catch(e){const range=document.createRange();range.selectNodeContents(code);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);copy.textContent="Выдели код и скопируй";}};
+  codeActions.append(copy);
+  const isOwner=chat.created_by===user?.id;
+  if(isOwner){
+    const rotate=document.createElement("button");rotate.type="button";rotate.className="dialog-secondary";rotate.textContent="Создать новый код";
+    rotate.onclick=async()=>{if(!confirm("Старый код перестанет работать. Продолжить?"))return;rotate.disabled=true;try{const {data,error}=await sb.rpc("ft_rotate_invite_code",{p_conversation_id:chat.id});if(error)throw error;await loadChats();await showConversationInfo();}catch(e){fail("Не удалось обновить код",e);}finally{rotate.disabled=false;}};
+    codeActions.append(rotate);
+  }
+  const memberHeading=document.createElement("h3");memberHeading.className="group-info-heading";memberHeading.textContent="Участники";
+  const memberList=document.createElement("div");memberList.className="group-member-list";
+  dialogContent.append(heading,title,codeLabel,code,codeActions,memberHeading,memberList);
+  if(!dialog.open)dialog.showModal();
+  try{
+    const {data:members,error}=await sb.from("ft_conversation_members").select("user_id,role,joined_at").eq("conversation_id",chat.id).order("joined_at",{ascending:true});
+    if(error)throw error;
+    if(!members?.length){memberList.textContent="Участники не найдены.";return;}
+    for(const member of members){
+      const row=document.createElement("div");row.className="group-member";
+      const details=document.createElement("div");details.className="group-member-details";
+      const name=document.createElement("strong");name.textContent=member.user_id===user.id?"Вы":("Участник "+member.user_id.slice(0,8));
+      const role=document.createElement("small");role.textContent=member.role==="owner"?"Владелец":"Участник";
+      details.append(name,role);row.append(details);
+      if(isOwner&&member.user_id!==user.id&&member.role!=="owner"){
+        const kick=document.createElement("button");kick.type="button";kick.className="member-kick";kick.textContent="Исключить";
+        kick.onclick=async()=>{if(!confirm("Исключить этого участника из беседы?"))return;kick.disabled=true;try{const {error}=await sb.rpc("ft_kick_member",{p_conversation_id:chat.id,p_user_id:member.user_id});if(error)throw error;await showConversationInfo();}catch(e){fail("Не удалось исключить участника",e);}finally{kick.disabled=false;}};
+        row.append(kick);
+      }
+      memberList.append(row);
+    }
+    if(isOwner){
+      const rename=document.createElement("button");rename.type="button";rename.className="dialog-secondary";rename.textContent="Изменить название";
+      rename.onclick=async()=>{const value=prompt("Новое название беседы:",chat.title);if(!value||!value.trim())return;try{const {error}=await sb.rpc("ft_rename_conversation",{p_conversation_id:chat.id,p_title:value.trim().slice(0,48)});if(error)throw error;await loadChats();$("#currentTitle").textContent=value.trim().slice(0,48);await showConversationInfo();}catch(e){fail("Не удалось изменить название",e);}};
+      const remove=document.createElement("button");remove.type="button";remove.className="dialog-danger";remove.textContent="Удалить беседу";
+      remove.onclick=async()=>{if(!confirm("Удалить беседу и всю её историю для всех участников? Это действие нельзя отменить."))return;try{const {error}=await sb.rpc("ft_delete_conversation",{p_conversation_id:chat.id});if(error)throw error;await stopLive();activeId=SAVED;await loadChats();await selectChat(SAVED);dialog.close();}catch(e){fail("Не удалось удалить беседу",e);}};
+      dialogContent.append(rename,remove);
+    }else{
+      const leave=document.createElement("button");leave.type="button";leave.className="dialog-danger";leave.textContent="Выйти из беседы";
+      leave.onclick=async()=>{if(!confirm("Выйти из этой беседы? Чтобы вернуться, понадобится код приглашения."))return;try{const {error}=await sb.rpc("ft_leave_conversation",{p_conversation_id:chat.id});if(error)throw error;await stopLive();activeId=SAVED;await loadChats();await selectChat(SAVED);dialog.close();}catch(e){fail("Не удалось выйти из беседы",e);}};
+      dialogContent.append(leave);
+    }
+  }catch(e){const err=document.createElement("p");err.textContent="Не удалось загрузить участников: "+(e.message||e);dialogContent.append(err);}
+}
+$("#infoBtn").addEventListener("click",showConversationInfo);
 $("#attachBtn").addEventListener("click",()=>{
   if(activeId===SAVED){fail("Сначала открой беседу",new Error("Вложения можно отправлять в облачную беседу, а не в «Избранное»."));return;}
   const picker=document.createElement("input");picker.type="file";
