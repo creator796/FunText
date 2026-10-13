@@ -658,3 +658,13 @@ body[data-theme="tor"] .primary-btn {
   color: #c7a2ff;
   filter: none;
 }
+
+
+.message-locked {
+  border: 1px solid rgba(244, 190, 90, .28);
+  color: #e4d1a7;
+  background: rgba(128, 87, 28, .10);
+}
+.message-encrypted {
+  border-color: rgba(90, 190, 220, .16);
+}
