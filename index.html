@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="FunText — приватные беседы без лишнего шума.">
+  <meta name="description" content="FunText — облачные беседы с анонимной сессией.">
   <title>FunText</title>
   <link rel="stylesheet" href="./style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,15 +16,11 @@
     <aside class="sidebar" id="sidebar">
       <div class="brand"><span class="brand-mark">F</span><span>FunText</span><span class="beta">BETA</span></div>
       <button class="new-chat" id="newChatBtn" type="button"><span>＋</span> Новая беседа</button>
+      <button class="join-chat" id="joinChatBtn" type="button">↗ Присоединиться по коду</button>
       <div class="section-label">ВАШИ БЕСЕДЫ</div>
-      <div class="chat-list" id="chatList">
-        <button class="chat-item active" data-chat="Избранное" type="button">
-          <span class="avatar saved">★</span><span class="chat-meta"><strong>Избранное</strong><small>Личные заметки</small></span>
-        </button>
-        <div class="empty-hint" id="emptyHint">Пока здесь тихо. Создайте беседу.</div>
-      </div>
+      <div class="chat-list" id="chatList"><div class="empty-hint" id="emptyHint">Загружаем беседы…</div></div>
       <div class="sidebar-bottom">
-        <div class="connection"><span class="status-dot"></span><span>Интерфейс запущен</span></div>
+        <div class="connection"><span class="status-dot"></span><span>Подключаемся к Supabase…</span></div>
         <button class="profile-button" id="profileBtn" type="button">
           <span class="avatar user-avatar">?</span><span class="profile-meta"><strong>Гость</strong><small>ID ещё не создан</small></span><span class="more">···</span>
         </button>
@@ -34,24 +30,19 @@
       <header class="topbar">
         <button class="mobile-menu" id="mobileMenuBtn" aria-label="Открыть список бесед" type="button">☰</button>
         <div class="current-chat-avatar" id="currentAvatar">★</div>
-        <div class="current-chat-info"><h1 id="currentTitle">Избранное</h1><p id="currentSubtitle">Личное пространство</p></div>
-        <div class="topbar-actions"><span class="mode-chip"><span class="mode-dot"></span> Локальный режим</span><button class="icon-button" id="infoBtn" aria-label="Информация" type="button">ⓘ</button></div>
+        <div class="current-chat-info"><h1 id="currentTitle">Избранное</h1><p id="currentSubtitle">Личные заметки</p></div>
+        <div class="topbar-actions"><span class="mode-chip"><span class="mode-dot"></span> Supabase</span><button class="icon-button" id="infoBtn" aria-label="Информация" type="button">ⓘ</button></div>
       </header>
-      <div class="notice"><span>ⓘ</span><p>Это первый прототип интерфейса. Сообщения пока хранятся только в памяти страницы и исчезнут после перезагрузки.</p></div>
+      <div class="notice"><span>ⓘ</span><p>Облачные сообщения доступны участникам беседы. FunText пока не использует сквозное шифрование или Tor и не предназначен для секретной переписки.</p></div>
       <div class="messages" id="messages" aria-live="polite">
-        <div class="welcome">
-          <div class="welcome-icon">F</div>
-          <h2>Добро пожаловать в FunText</h2>
-          <p>Начинаем с чистого листа. Здесь появятся ваши беседы и сообщения.</p>
-          <div class="welcome-pills"><span>Без телефона в интерфейсе</span><span>Тёмная тема</span><span>В разработке</span></div>
-        </div>
+        <div class="welcome"><div class="welcome-icon">F</div><h2>Добро пожаловать в FunText</h2><p>Создайте беседу или присоединитесь по коду приглашения.</p><div class="welcome-pills"><span>Анонимная сессия</span><span>Облачная история</span><span>В разработке</span></div></div>
       </div>
       <form class="composer" id="messageForm">
-        <button class="attach-button" id="attachBtn" type="button" aria-label="Вложения" title="Вложения добавим следующим этапом">＋</button>
+        <button class="attach-button" id="attachBtn" type="button" aria-label="Вложения" title="Вложения пока не реализованы">＋</button>
         <textarea id="messageInput" rows="1" maxlength="4000" placeholder="Напишите сообщение…" aria-label="Текст сообщения"></textarea>
         <div class="composer-bottom"><span class="composer-hint">Enter — отправить · Shift+Enter — новая строка</span><button class="send-button" type="submit" aria-label="Отправить сообщение">➤</button></div>
       </form>
-      <div class="footer-note">FunText · прототип · не предназначен для секретной переписки</div>
+      <div class="footer-note">FunText · ранняя бета · нет E2EE или Tor</div>
     </section>
   </main>
   <dialog id="simpleDialog" class="simple-dialog">
