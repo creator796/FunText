@@ -629,3 +629,32 @@ body[data-theme="tor"] .primary-btn {
     opacity: 1;
   }
 }
+
+
+/* Privacy hardening: theme marks are local text, not third-party image requests. */
+.theme-choice-mark .theme-logo {
+  position: static;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  transform: none;
+  object-fit: initial;
+  opacity: 1;
+}
+.theme-choice-mark .funpay-logo {
+  font-size: 31px;
+  font-weight: 900;
+  letter-spacing: -2px;
+  color: #f4c84a;
+  filter: none;
+}
+.theme-choice-mark .tor-logo {
+  font-family: Arial, sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.7px;
+  color: #c7a2ff;
+  filter: none;
+}
