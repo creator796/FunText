@@ -160,3 +160,16 @@ body[data-theme="tor"] .theme-choice.selected .theme-choice-mark{box-shadow:0 0 
 
 /* Make the Tor onion glyph visible in browser theme cards */
 .theme-logo.tor-logo{font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif;font-size:27px;line-height:1;font-style:normal;padding:0;}
+
+
+/* Large, branded watermark-style marks in the theme selector. */
+.theme-choice-mark{position:relative;isolation:isolate;flex-basis:58px;width:58px;height:58px;border-radius:14px;background:linear-gradient(145deg,#171d31,#0b1221);overflow:hidden}
+.theme-choice-mark::before{content:"";position:absolute;inset:-7px;z-index:-1;border-radius:50%;background:currentColor;opacity:.08;filter:blur(2px)}
+.theme-logo{display:grid;place-items:center;width:100%;height:100%}
+.theme-symbol{display:block;width:50px;height:50px;overflow:visible;filter:drop-shadow(0 2px 5px #0005)}
+.funpay-symbol{color:#f4c84a}
+.tor-symbol{width:54px;height:54px;filter:drop-shadow(0 2px 6px #9d6eea55)}
+.theme-choice[data-theme-value="funpay"] .theme-choice-mark{background:radial-gradient(circle at 50% 45%,#23456c 0%,#12243d 65%,#0a1525 100%);color:#f4c84a}
+.theme-choice[data-theme-value="tor"] .theme-choice-mark{background:radial-gradient(circle at 50% 45%,#392353 0%,#21152f 68%,#120d1c 100%);color:#b98bff}
+.theme-choice{gap:12px}
+@media(max-width:420px){.theme-choice-mark{flex-basis:58px;width:58px;height:58px}}
