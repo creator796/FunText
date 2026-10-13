@@ -119,7 +119,7 @@ function openSettings() {
 
   const note = document.createElement("p");
   note.className = "settings-warning";
-  note.textContent = "Важно: тема «Tor» — только оформление. FunText не подключается к сети Tor и не обеспечивает анонимность уровня Tor или сквозное шифрование.";
+  note.textContent = "Приватность: аккаунт создаётся без почты и телефона, но сообщения и метаданные бесед хранятся в Supabase. Сервер получает сетевые данные соединения. Сквозного шифрования (E2EE) и встроенного подключения к Tor пока нет; тема «Tor» меняет только оформление.";
   const actions = document.createElement("div"); actions.className = "settings-actions";
   const reset = document.createElement("button"); reset.type = "button"; reset.className = "dialog-secondary"; reset.textContent = "Сбросить";
   const save = document.createElement("button"); save.type = "button"; save.className = "dialog-primary"; save.textContent = "Сохранить";
