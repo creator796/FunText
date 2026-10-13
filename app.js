@@ -66,7 +66,7 @@ function openSettings() {
   themeChoices.className = "theme-choices";
   const themeOptions = [
     { value: "funpay", name: "FunPay", description: "Тёмно-синий стиль", mark: '<span class="theme-logo funpay-logo" aria-hidden="true"><span>Fun</span><b>Pay</b></span>' },
-    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<svg class="theme-logo tor-logo" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4C15 4 8 10 8 19c0 8 5 15 16 25 11-10 16-17 16-25C40 10 33 4 24 4Z" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M13 17c6-5 16-5 22 0M11 23c8-5 18-5 26 0M15 29c6-4 12-4 18 0M20 35c3-2 5-2 8 0" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>' }
+    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<span class="theme-logo tor-logo" aria-hidden="true">🧅</span>' }
   ];
   const themeButtons = [];
   for (const item of themeOptions) {
