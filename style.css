@@ -157,3 +157,6 @@ body[data-theme="tor"] .theme-choice.selected .theme-choice-mark{box-shadow:0 0 
 
 /* Keep the Tor onion glyph clearly visible across browsers */
 .theme-logo.tor-logo{font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif;font-size:27px;line-height:1;font-style:normal;padding:0;}
+
+/* Make the Tor onion glyph visible in browser theme cards */
+.theme-logo.tor-logo{font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif;font-size:27px;line-height:1;font-style:normal;padding:0;}
