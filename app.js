@@ -126,6 +126,11 @@ function openSettings() {
   reset.addEventListener("click", () => {
     theme.value = DEFAULT_SETTINGS.theme; font.value = DEFAULT_SETTINGS.fontSize;
     compact.checked = DEFAULT_SETTINGS.compact; enter.checked = DEFAULT_SETTINGS.enterToSend;
+    for (const choice of themeButtons) {
+      const selected = choice.dataset.themeValue === DEFAULT_SETTINGS.theme;
+      choice.classList.toggle("selected", selected);
+      choice.setAttribute("aria-pressed", String(selected));
+    }
     saveSettings(DEFAULT_SETTINGS);
   });
   save.addEventListener("click", () => {
