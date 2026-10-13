@@ -1,7 +1,32 @@
 # FunText
 
-Browser messenger prototype on GitHub Pages + Supabase.
+FunText — ранняя бета браузерного мессенджера на GitHub Pages + Supabase.
 
-Cloud chat setup: run `supabase/migrations/202610130001_funtext_chat.sql` in Supabase Dashboard → SQL Editor before using cloud chats.
+## Реализовано в коде
 
-Current limits: no end-to-end encryption (E2EE), no Tor routing, no account recovery, and no file attachments yet. Do not send secrets or sensitive data.
+- Анонимная Supabase Auth-сессия, сохраняемая в браузере.
+- Создание облачных бесед через RPC-функцию.
+- Присоединение к беседе по коду приглашения.
+- Сохранение и загрузка истории сообщений.
+- Получение новых сообщений через Supabase Realtime.
+- RLS: читать беседы и сообщения могут только участники; отправитель должен совпадать с текущей сессией.
+- «Избранное» сохраняется локально в браузере.
+
+## Обязательная настройка базы
+
+Откройте Supabase Dashboard → SQL Editor → New query, вставьте и выполните весь файл:
+
+`supabase/migrations/202610130001_funtext_chat.sql`
+
+Пока этот SQL не выполнен, облачные беседы не заработают, даже если анонимная авторизация уже подключена.
+
+Сайт: https://creator796.github.io/FunText/
+
+## Ограничения безопасности
+
+- Это не Tor и не система гарантированной анонимности.
+- Сквозного шифрования (E2EE) нет. Не отправляйте пароли, документы или секретные данные.
+- Потеря данных браузера может лишить доступа к анонимной сессии; восстановление аккаунта не реализовано.
+- Вложения и HTML-просмотр пока не реализованы.
+- Код приглашения даёт доступ к беседе; передавайте его только нужным людям.
+- Публичный Supabase publishable key допустим во фронтенде только при корректных RLS-политиках. Никогда не публикуйте service_role или secret key.
