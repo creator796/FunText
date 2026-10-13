@@ -104,7 +104,6 @@ async function selectChat(id){
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);})
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_attachments",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderAttachment(payload.new);})
     .subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
-  subscription=sb.channel("ft-chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);}).subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
 }
 async function createChat(){
   if(!user){fail("Нет подключения",new Error(authError||"Авторизация не готова"));return;}
