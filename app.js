@@ -65,8 +65,8 @@ function openSettings() {
   const themeChoices = document.createElement("div");
   themeChoices.className = "theme-choices";
   const themeOptions = [
-    { value: "funpay", name: "FunPay", description: "Тёмно-синий стиль", mark: '<span class="theme-logo funpay-logo" aria-hidden="true"><span>Fun</span><b>Pay</b></span>' },
-    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<span class="theme-logo tor-logo" aria-hidden="true">🧅</span>' }
+    { value: "funpay", name: "FunPay", description: "Тёмно-синий стиль", mark: '<svg class="theme-symbol funpay-symbol" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 18h23L20 7h14l22 22H33l10-10H8z" fill="currentColor"/><path d="M56 46H33l11 11H30L8 35h23L21 45h35z" fill="currentColor"/></svg>' },
+    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<svg class="theme-symbol tor-symbol" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5C20 5 12 16 12 28c0 10 5 18 13 22l-2 8h18l-2-8c8-4 13-12 13-22C52 16 44 5 32 5Z" fill="#7D4BB8"/><path d="M32 10c-8 0-13 8-13 17s5 16 13 16 13-7 13-16-5-17-13-17Z" fill="#B58AE8"/><path d="M32 14c-4 0-7 6-7 13s3 12 7 12 7-5 7-12-3-13-7-13Z" fill="#F0E5FF"/><path d="M13 24c6-5 12-7 19-7s13 2 19 7M12 31c7-4 13-5 20-5s13 1 20 5M16 39c5-3 10-4 16-4s11 1 16 4" fill="none" stroke="#4D287D" stroke-width="2.5" stroke-linecap="round"/><path d="M24 50h16M25 55h14" stroke="#DCC5FF" stroke-width="2.5" stroke-linecap="round"/></svg>' }
   ];
   const themeButtons = [];
   for (const item of themeOptions) {
