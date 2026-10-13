@@ -7,6 +7,108 @@ const sb = window.supabase && window.FUNTEXT_SUPABASE_CONFIG
   ? window.supabase.createClient(window.FUNTEXT_SUPABASE_CONFIG.url, window.FUNTEXT_SUPABASE_CONFIG.publishableKey, { auth: { persistSession: true, autoRefreshToken: true } })
   : null;
 
+
+const SETTINGS_KEY = "funtext:settings:v1";
+const DEFAULT_SETTINGS = { theme: "tor", fontSize: "normal", compact: false, enterToSend: true };
+function getSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    return {
+      theme: saved.theme === "funpay" ? "funpay" : "tor",
+      fontSize: ["small", "normal", "large"].includes(saved.fontSize) ? saved.fontSize : "normal",
+      compact: saved.compact === true,
+      enterToSend: saved.enterToSend !== false
+    };
+  } catch (_) { return { ...DEFAULT_SETTINGS }; }
+}
+function applySettings(settings = getSettings()) {
+  document.body.dataset.theme = settings.theme;
+  document.body.dataset.fontSize = settings.fontSize;
+  document.body.classList.toggle("compact-mode", settings.compact);
+  document.body.dataset.enterToSend = settings.enterToSend ? "true" : "false";
+}
+function saveSettings(settings) {
+  const normalized = {
+    theme: settings.theme === "funpay" ? "funpay" : "tor",
+    fontSize: ["small", "normal", "large"].includes(settings.fontSize) ? settings.fontSize : "normal",
+    compact: settings.compact === true,
+    enterToSend: settings.enterToSend === true
+  };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalized)); }
+  catch (e) { console.warn("Не удалось сохранить настройки в браузере", e); }
+  applySettings(normalized);
+  return normalized;
+}
+function settingsField(labelText, control) {
+  const label = document.createElement("label");
+  label.className = "settings-field";
+  const title = document.createElement("span");
+  title.className = "settings-field-title";
+  title.textContent = labelText;
+  label.append(title, control);
+  return label;
+}
+function openSettings() {
+  const current = getSettings();
+  dialogContent.replaceChildren();
+  const heading = document.createElement("h2");
+  heading.textContent = "Настройки";
+  const intro = document.createElement("p");
+  intro.textContent = "Параметры сохраняются в этом браузере и не меняют данные бесед.";
+  const form = document.createElement("form");
+  form.className = "settings-form";
+  form.addEventListener("submit", ev => ev.preventDefault());
+
+  const theme = document.createElement("select");
+  theme.className = "dialog-input";
+  for (const [value, label] of [["tor", "Tor — текущая тёмная тема"], ["funpay", "FunPay — жёлто-чёрная тема"]]) {
+    const option = document.createElement("option"); option.value = value; option.textContent = label; theme.append(option);
+  }
+  theme.value = current.theme;
+  form.append(settingsField("Оформление", theme));
+
+  const font = document.createElement("select");
+  font.className = "dialog-input";
+  for (const [value, label] of [["small", "Мелкий"], ["normal", "Обычный"], ["large", "Крупный"]]) {
+    const option = document.createElement("option"); option.value = value; option.textContent = label; font.append(option);
+  }
+  font.value = current.fontSize;
+  form.append(settingsField("Размер текста", font));
+
+  const compact = document.createElement("input");
+  compact.type = "checkbox"; compact.checked = current.compact;
+  const compactLabel = document.createElement("label"); compactLabel.className = "settings-check";
+  const compactText = document.createElement("span"); compactText.textContent = "Компактный интерфейс";
+  compactLabel.append(compact, compactText); form.append(compactLabel);
+
+  const enter = document.createElement("input");
+  enter.type = "checkbox"; enter.checked = current.enterToSend;
+  const enterLabel = document.createElement("label"); enterLabel.className = "settings-check";
+  const enterText = document.createElement("span"); enterText.textContent = "Enter отправляет сообщение (Shift+Enter — новая строка)";
+  enterLabel.append(enter, enterText); form.append(enterLabel);
+
+  const note = document.createElement("p");
+  note.className = "settings-warning";
+  note.textContent = "Важно: тема «Tor» — только оформление. FunText не подключается к сети Tor и не обеспечивает анонимность уровня Tor или сквозное шифрование.";
+  const actions = document.createElement("div"); actions.className = "settings-actions";
+  const reset = document.createElement("button"); reset.type = "button"; reset.className = "dialog-secondary"; reset.textContent = "Сбросить";
+  const save = document.createElement("button"); save.type = "button"; save.className = "dialog-primary"; save.textContent = "Сохранить";
+  reset.addEventListener("click", () => {
+    theme.value = DEFAULT_SETTINGS.theme; font.value = DEFAULT_SETTINGS.fontSize;
+    compact.checked = DEFAULT_SETTINGS.compact; enter.checked = DEFAULT_SETTINGS.enterToSend;
+    saveSettings(DEFAULT_SETTINGS);
+  });
+  save.addEventListener("click", () => {
+    saveSettings({ theme: theme.value, fontSize: font.value, compact: compact.checked, enterToSend: enter.checked });
+    dialog.close();
+  });
+  actions.append(reset, save);
+  form.append(note, actions);
+  dialogContent.append(heading, intro, form);
+  if (!dialog.open) dialog.showModal();
+}
+applySettings();
+
 function time(value) { return new Intl.DateTimeFormat("ru-RU", {hour:"2-digit",minute:"2-digit"}).format(new Date(value || Date.now())); }
 function dialogBox(title, body, actionText, action) {
   dialogContent.replaceChildren();
@@ -151,11 +253,12 @@ $("#messageForm").addEventListener("submit",async ev=>{
   try{const {data,error}=await sb.from("ft_messages").insert({conversation_id:activeId,sender_id:user.id,content}).select("id,conversation_id,sender_id,content,created_at").single();if(error)throw error;renderMessage(data);input.value="";input.style.height="34px";}
   catch(e){fail("Сообщение не отправлено",e);}finally{button.disabled=false;input.focus();}
 });
-input.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&!ev.shiftKey){ev.preventDefault();$("#messageForm").requestSubmit();}});
+input.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&!ev.shiftKey&&getSettings().enterToSend){ev.preventDefault();$("#messageForm").requestSubmit();}});
 input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,130)+"px";});
 $("#newChatBtn").addEventListener("click",createChat);
 $("#joinChatBtn").addEventListener("click",joinChat);
 $("#mobileMenuBtn").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
+$("#settingsBtn").addEventListener("click", openSettings);
 $("#profileBtn").addEventListener("click",()=>{
   if(!user){dialogBox("Профиль",authError||"Подключаем авторизацию…","Повторить",initializeAuth);return;}
   dialogBox("Анонимный аккаунт","ID сессии: "+user.id+"\n\nСохраняй данные сайта, чтобы не потерять сессию. Восстановление аккаунта не реализовано. Сквозного шифрования нет — не отправляй секретные данные.","Скопировать ID",()=>navigator.clipboard.writeText(user.id));
