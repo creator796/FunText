@@ -373,3 +373,103 @@ body[data-theme="tor"]::before{
 body[data-theme="tor"]::after{
   background:linear-gradient(135deg,rgba(17,11,25,.40),rgba(17,11,25,.22) 50%,rgba(17,11,25,.40));
 }
+
+
+/* Tor Browser-inspired animated cyan / blue / violet atmosphere. */
+@keyframes torAuroraDrift {
+  0% { background-position: 0% 50%, 100% 50%, 50% 0%; }
+  50% { background-position: 100% 50%, 0% 50%, 50% 100%; }
+  100% { background-position: 0% 50%, 100% 50%, 50% 0%; }
+}
+@keyframes torEdgeGlow {
+  0%, 100% { opacity: .48; }
+  50% { opacity: .9; }
+}
+@keyframes torButtonFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+body[data-theme="tor"]::before {
+  background-image:
+    radial-gradient(ellipse at 12% 18%, rgba(0,219,222,.20) 0%, transparent 43%),
+    radial-gradient(ellipse at 88% 78%, rgba(102,93,255,.25) 0%, transparent 46%),
+    linear-gradient(125deg, #0b1020 0%, #17132d 35%, #101c35 68%, #17102a 100%);
+  background-size: 220% 220%, 220% 220%, 300% 300%;
+  background-position: 0% 50%, 100% 50%, 0% 50%;
+  animation: torAuroraDrift 26s ease-in-out infinite;
+  opacity: 1;
+}
+body[data-theme="tor"]::after {
+  background:
+    linear-gradient(115deg, rgba(5,10,22,.40), rgba(8,12,28,.20) 50%, rgba(5,8,20,.42)),
+    linear-gradient(90deg, rgba(0,219,222,.025), transparent 35%, rgba(128,109,236,.035));
+}
+body[data-theme="tor"] .sidebar {
+  background: rgba(10,17,34,.78);
+  border-right-color: rgba(76,204,245,.16);
+  box-shadow: 1px 0 30px rgba(0,180,230,.035);
+}
+body[data-theme="tor"] .main-panel {
+  background: linear-gradient(180deg, rgba(8,14,30,.24), rgba(7,10,24,.38));
+}
+body[data-theme="tor"] .topbar {
+  background: rgba(11,18,36,.64);
+  border-bottom-color: rgba(91,197,245,.14);
+}
+body[data-theme="tor"] .notice,
+body[data-theme="tor"] .composer,
+body[data-theme="tor"] .dialog,
+body[data-theme="tor"] .settings-card {
+  border-color: rgba(95,194,246,.18);
+  box-shadow: 0 8px 32px rgba(0,0,0,.14), inset 0 1px 0 rgba(160,220,255,.035);
+}
+body[data-theme="tor"] .composer:focus-within {
+  border-color: rgba(0,219,222,.52);
+  box-shadow: 0 0 0 3px rgba(0,219,222,.075), 0 0 28px rgba(0,170,255,.08);
+}
+body[data-theme="tor"] .chat-item:hover,
+body[data-theme="tor"] .chat-item.active {
+  background: linear-gradient(100deg, rgba(0,219,222,.09), rgba(128,109,236,.13));
+}
+body[data-theme="tor"] .new-chat,
+body[data-theme="tor"] .send-btn,
+body[data-theme="tor"] .primary-btn {
+  background: linear-gradient(105deg, #00bfc9 0%, #367df5 35%, #806dec 68%, #00bfc9 100%);
+  background-size: 200% 200%;
+  border-color: rgba(126,220,255,.28);
+  box-shadow: 0 4px 18px rgba(0,174,235,.14);
+  transition: box-shadow .2s ease, transform .2s ease, filter .2s ease;
+}
+body[data-theme="tor"] .new-chat:hover,
+body[data-theme="tor"] .send-btn:hover,
+body[data-theme="tor"] .primary-btn:hover {
+  animation: torButtonFlow 3s linear infinite;
+  box-shadow: 0 5px 24px rgba(0,190,235,.24);
+  filter: brightness(1.08);
+}
+body[data-theme="tor"] a,
+body[data-theme="tor"] .link {
+  color: #72d9f5;
+}
+body[data-theme="tor"] a:hover,
+body[data-theme="tor"] .link:hover {
+  color: #b5f2ff;
+  text-shadow: 0 0 14px rgba(0,219,222,.22);
+}
+body[data-theme="tor"] .message-bubble {
+  border-color: rgba(112,192,245,.13);
+}
+body[data-theme="tor"] input:focus,
+body[data-theme="tor"] textarea:focus,
+body[data-theme="tor"] select:focus {
+  border-color: rgba(0,219,222,.52);
+  box-shadow: 0 0 0 3px rgba(0,219,222,.07);
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="tor"]::before,
+  body[data-theme="tor"] .new-chat:hover,
+  body[data-theme="tor"] .send-btn:hover,
+  body[data-theme="tor"] .primary-btn:hover {
+    animation: none !important;
+  }
+}
