@@ -173,3 +173,16 @@ body[data-theme="tor"] .theme-choice.selected .theme-choice-mark{box-shadow:0 0 
 .theme-choice[data-theme-value="tor"] .theme-choice-mark{background:radial-gradient(circle at 50% 45%,#392353 0%,#21152f 68%,#120d1c 100%);color:#b98bff}
 .theme-choice{gap:12px}
 @media(max-width:420px){.theme-choice-mark{flex-basis:58px;width:58px;height:58px}}
+
+
+/* Use real brand artwork in the theme picker, not approximated drawings. */
+.theme-choice-mark{position:relative;display:block;flex:0 0 58px;width:58px;height:58px;border-radius:14px;overflow:hidden;isolation:isolate;background:#101725}
+.theme-choice-mark::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:radial-gradient(circle at 50% 45%,currentColor 0%,transparent 78%);opacity:.13}
+.theme-choice-mark .theme-logo{position:absolute;display:block;max-width:none;height:auto;object-fit:contain;flex:none}
+.theme-choice-mark .funpay-logo{width:190px;height:auto;max-height:none;left:0;top:50%;transform:translateY(-50%);object-position:left center;filter:drop-shadow(0 1px 3px #0006)}
+.theme-choice-mark .tor-logo{width:68px;height:68px;left:50%;top:50%;transform:translate(-50%,-50%);object-fit:contain;opacity:.95;filter:drop-shadow(0 2px 6px #a970ff55)}
+.theme-choice[data-theme-value="funpay"] .theme-choice-mark{background:radial-gradient(circle at 25% 50%,#23456c 0%,#12243d 68%,#0a1525 100%);color:#f4c84a}
+.theme-choice[data-theme-value="tor"] .theme-choice-mark{background:radial-gradient(circle at 50% 45%,#392353 0%,#21152f 68%,#120d1c 100%);color:#b98bff}
+.theme-choice{gap:12px}
+.theme-choice-meta{position:relative;z-index:1}
+@media(max-width:420px){.theme-choice-mark{flex-basis:58px;width:58px;height:58px}}
