@@ -7,10 +7,10 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="FunText — облачные беседы с анонимной сессией.">
   <title>FunText</title>
-  <link rel="stylesheet" href="./style.css?v=20261013-9">
+  <link rel="stylesheet" href="./style.css?v=20261013-10">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" referrerpolicy="no-referrer"></script>
   <script src="./supabase-config.js"></script>
-  <script src="./app.js?v=20261013-11" defer></script>
+  <script src="./app.js?v=20261013-12" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -35,7 +35,7 @@
         <div class="current-chat-info"><h1 id="currentTitle">Избранное</h1><p id="currentSubtitle">Личные заметки</p></div>
         <div class="topbar-actions"><span class="mode-chip"><span class="mode-dot"></span> Supabase</span><button class="icon-button" id="infoBtn" aria-label="Информация" type="button">ⓘ</button></div>
       </header>
-      <div class="notice"><span>ⓘ</span><p>Аккаунт не требует почты или телефона, но сообщения хранятся в облаке Supabase. Нет E2EE или встроенного Tor; не отправляйте секретные данные.</p></div>
+      <div class="notice"><span>ⓘ</span><p>Текст новых сообщений шифруется в браузере. Ключ нужно передать участникам отдельно; вложения пока не зашифрованы E2EE. Встроенного Tor нет.</p></div>
       <div class="messages" id="messages" aria-live="polite">
         <div class="welcome"><div class="welcome-icon">F</div><h2>Добро пожаловать в FunText</h2><p>Создайте беседу или присоединитесь по коду приглашения.</p><div class="welcome-pills"><span>Анонимная сессия</span><span>Облачная история</span><span>В разработке</span></div></div>
       </div>
