@@ -15,3 +15,22 @@
 .attachment-action{padding:7px 10px;border:1px solid #2b3c5b;border-radius:8px;background:#172744;color:#c5d5f7;font-size:11px}
 .attachment-action:hover{background:#21375b}
 .html-preview{display:block;width:min(100%,800px);height:min(65vh,620px);border:1px solid var(--line);border-radius:10px;background:#fff}
+
+
+/* Group management dialog */
+.group-info-title{font-size:16px!important;font-weight:700;color:#eef3ff!important;margin:0 0 18px!important}
+.group-info-label{display:block;font-size:11px;color:#8292ad;margin:0 0 7px}
+.invite-code{display:block;padding:13px 14px;border:1px solid #2b3c5b;border-radius:10px;background:#0a1120;color:#c5d5ff;font-size:15px;letter-spacing:1.2px;overflow-wrap:anywhere;user-select:all}
+.group-info-actions{display:flex;flex-direction:column;gap:8px;margin:10px 0 22px}
+.group-info-actions .dialog-primary,.group-info-actions .dialog-secondary{margin:0}
+.group-info-heading{font-size:13px;margin:18px 0 10px;color:#e1e9fb}
+.group-member-list{display:flex;flex-direction:column;gap:7px;max-height:32vh;overflow:auto;margin-bottom:16px}
+.group-member{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #25334b;border-radius:10px;background:#0c1423}
+.group-member-details{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.group-member-details strong{font-size:12px;overflow-wrap:anywhere}
+.group-member-details small{font-size:10px;color:#8d9bb3}
+.dialog-secondary,.dialog-danger,.member-kick{padding:10px 12px;border:1px solid #2b3c5b;border-radius:9px;background:#17243a;color:#c5d5f7;font-size:12px}
+.dialog-secondary{width:100%;margin-top:8px}
+.dialog-danger{width:100%;margin-top:8px;border-color:#673846;background:#301a26;color:#ffbdc9}
+.member-kick{flex:0 0 auto;padding:7px 9px;border-color:#673846;background:#301a26;color:#ffbdc9;font-size:10px}
+.dialog-secondary:disabled,.dialog-danger:disabled,.member-kick:disabled{opacity:.55;cursor:wait}
