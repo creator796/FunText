@@ -8,6 +8,14 @@ const dialogContent = $("#dialogContent");
 
 let activeChat = "Избранное";
 const chatNames = ["Избранное"];
+let authUser = null;
+let authError = null;
+
+const supabaseClient = window.supabase && window.FUNTEXT_SUPABASE_CONFIG
+  ? window.supabase.createClient(window.FUNTEXT_SUPABASE_CONFIG.url, window.FUNTEXT_SUPABASE_CONFIG.publishableKey, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    })
+  : null;
 
 function timeNow() {
   return new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(new Date());
@@ -122,6 +130,57 @@ input.addEventListener("input", () => {
 
 $("#newChatBtn").addEventListener("click", createChat);
 $("#mobileMenuBtn").addEventListener("click", () => $("#sidebar").classList.toggle("open"));
-$("#profileBtn").addEventListener("click", () => showDialog("Профиль", "Регистрация и восстановление аккаунта ещё не подключены. Не отправляйте сюда настоящие секреты или личные данные.", "Понятно", () => {}));
+$("#profileBtn").addEventListener("click", () => {
+  if (!authUser) {
+    showDialog("Профиль", authError || "Подключаем анонимную авторизацию Supabase…", "Повторить подключение", initializeAuth);
+    return;
+  }
+  showDialog("Анонимный аккаунт", `ID сессии: ${authUser.id}\n\nСессия сохраняется в этом браузере. Восстановление аккаунта по ID и секрету ещё не реализовано. Если очистить данные браузера, доступ к этой сессии можно потерять. Сообщения пока остаются локальными и не синхронизируются.`, "Скопировать ID сессии", () => navigator.clipboard?.writeText(authUser.id).catch(() => {}));
+});
 $("#infoBtn").addEventListener("click", () => showDialog("О FunText", "Это начальный UI-прототип. Сейчас переписка не отправляется на сервер, не шифруется сквозным шифрованием и не проходит через Tor.", "Понятно", () => {}));
 $("#attachBtn").addEventListener("click", () => showDialog("Вложения", "Загрузка файлов и безопасный предпросмотр HTML ещё не реализованы. Добавим их после подключения базы и правил доступа.", "Понятно", () => {}));
+
+
+async function initializeAuth() {
+  const connectionLabel = document.querySelector(".connection span:last-child");
+  const profileName = document.querySelector("#profileBtn .profile-meta strong");
+  const profileId = document.querySelector("#profileBtn .profile-meta small");
+  const avatar = document.querySelector("#profileBtn .user-avatar");
+
+  if (!supabaseClient) {
+    authError = "Не удалось загрузить клиент Supabase. Проверьте подключение к интернету и конфигурацию.";
+    if (connectionLabel) connectionLabel.textContent = "Supabase недоступен";
+    return;
+  }
+
+  if (connectionLabel) connectionLabel.textContent = "Подключаемся к Supabase…";
+
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    let user = sessionData.session?.user ?? null;
+    if (!user) {
+      const { data, error } = await supabaseClient.auth.signInAnonymously();
+      if (error) throw error;
+      user = data.user;
+    }
+    if (!user) throw new Error("Supabase не вернул пользователя.");
+
+    authUser = user;
+    authError = null;
+    if (connectionLabel) connectionLabel.textContent = "Анонимная авторизация подключена";
+    if (profileName) profileName.textContent = "Анонимный аккаунт";
+    if (profileId) profileId.textContent = "ID: " + user.id.slice(0, 8) + "…";
+    if (avatar) avatar.textContent = "A";
+  } catch (error) {
+    authError = "Не удалось войти анонимно в Supabase: " + (error?.message || "неизвестная ошибка") +
+      ". Проверьте, что Anonymous Sign-Ins включён в настройках Supabase.";
+    if (connectionLabel) connectionLabel.textContent = "Ошибка авторизации";
+    if (profileName) profileName.textContent = "Не подключено";
+    if (profileId) profileId.textContent = "Нажмите для подробностей";
+    console.error("FunText Supabase auth error:", error);
+  }
+}
+
+initializeAuth();
