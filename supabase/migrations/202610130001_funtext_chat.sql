@@ -81,3 +81,61 @@ exception when insufficient_privilege then
  raise notice 'Enable ft_messages in Database -> Publications manually.';
 end;
 $$;
+
+-- Private attachments: max 10 MiB per file. HTML previews must be sandboxed by the client.
+create table if not exists public.ft_attachments (
+ id uuid primary key default gen_random_uuid(),
+ conversation_id uuid not null references public.ft_conversations(id) on delete cascade,
+ uploader_id uuid not null references auth.users(id) on delete cascade,
+ file_name text not null check (char_length(file_name) between 1 and 255),
+ storage_path text not null unique,
+ content_type text not null default 'application/octet-stream',
+ size_bytes bigint not null check (size_bytes between 1 and 10485760),
+ created_at timestamptz not null default now()
+);
+create index if not exists ft_attachments_conversation_created_idx on public.ft_attachments(conversation_id,created_at);
+alter table public.ft_attachments enable row level security;
+drop policy if exists ft_attachments_member_select on public.ft_attachments;
+create policy ft_attachments_member_select on public.ft_attachments for select to authenticated
+ using (public.ft_is_conversation_member(conversation_id));
+drop policy if exists ft_attachments_member_insert on public.ft_attachments;
+create policy ft_attachments_member_insert on public.ft_attachments for insert to authenticated
+ with check (uploader_id=auth.uid() and public.ft_is_conversation_member(conversation_id));
+grant select, insert on public.ft_attachments to authenticated;
+
+insert into storage.buckets (id,name,public,file_size_limit)
+values ('ft-attachments','ft-attachments',false,10485760)
+on conflict (id) do update set public=false,file_size_limit=10485760;
+
+drop policy if exists ft_storage_member_read on storage.objects;
+create policy ft_storage_member_read on storage.objects for select to authenticated
+ using (
+  bucket_id='ft-attachments'
+  and case
+   when split_part(name,'/',1) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+   then public.ft_is_conversation_member(split_part(name,'/',1)::uuid)
+   else false
+  end
+ );
+drop policy if exists ft_storage_member_insert on storage.objects;
+create policy ft_storage_member_insert on storage.objects for insert to authenticated
+ with check (
+  bucket_id='ft-attachments'
+  and case
+   when split_part(name,'/',1) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+   then public.ft_is_conversation_member(split_part(name,'/',1)::uuid)
+   else false
+  end
+ );
+
+do $$
+begin
+ if exists(select 1 from pg_publication where pubname='supabase_realtime') then
+  if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ft_attachments') then
+   alter publication supabase_realtime add table public.ft_attachments;
+  end if;
+ end if;
+exception when insufficient_privilege then
+ raise notice 'Enable ft_messages and ft_attachments in Database -> Publications manually.';
+end;
+$$;
