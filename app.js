@@ -2,7 +2,7 @@ const $ = (s) => document.querySelector(s);
 const messages = $("#messages"), input = $("#messageInput"), chatList = $("#chatList"), dialog = $("#simpleDialog"), dialogContent = $("#dialogContent");
 const SAVED = "saved";
 let activeId = SAVED, activeName = "Избранное", user = null, authError = null, chats = [], subscription = null;
-const rendered = new Set();
+const rendered = new Set(), renderedAttachments = new Set();
 const sb = window.supabase && window.FUNTEXT_SUPABASE_CONFIG
   ? window.supabase.createClient(window.FUNTEXT_SUPABASE_CONFIG.url, window.FUNTEXT_SUPABASE_CONFIG.publishableKey, { auth: { persistSession: true, autoRefreshToken: true } })
   : null;
@@ -41,6 +41,32 @@ function renderMessage(m) {
   if(!own && m.sender_id){const a=document.createElement("span");a.className="message-author";a.textContent="Участник "+m.sender_id.slice(0,6);b.prepend(a);}
   const t=document.createElement("span");t.className="message-time";t.textContent=time(m.created_at);b.append(t);messages.append(b);messages.scrollTop=messages.scrollHeight;
 }
+function renderAttachment(file){
+  if(renderedAttachments.has(file.id))return;renderedAttachments.add(file.id);
+  const card=document.createElement("div");card.className="attachment-card";
+  const name=document.createElement("strong");name.textContent="📎 "+file.file_name;
+  const meta=document.createElement("small");meta.textContent=(file.size_bytes/1024).toFixed(file.size_bytes<1048576?0:1)+" KB · "+time(file.created_at);
+  const actions=document.createElement("div");actions.className="attachment-actions";
+  const open=document.createElement("button");open.type="button";open.className="attachment-action";open.textContent=/\.html?$/i.test(file.file_name)||file.content_type==="text/html"?"Предпросмотр":"Открыть";open.onclick=()=>openAttachment(file,false);
+  const download=document.createElement("button");download.type="button";download.className="attachment-action";download.textContent="Скачать";download.onclick=()=>openAttachment(file,true);
+  actions.append(open,download);card.append(name,meta,actions);messages.append(card);messages.scrollTop=messages.scrollHeight;
+}
+async function openAttachment(file,download){
+  try{
+    const {data,error}=await sb.storage.from("ft-attachments").createSignedUrl(file.storage_path,90);if(error)throw error;
+    if(!download && (/\.html?$/i.test(file.file_name)||file.content_type==="text/html")){
+      const response=await fetch(data.signedUrl,{cache:"no-store"});if(!response.ok)throw new Error("Не удалось загрузить HTML");
+      let doc=await response.text();
+      const csp='<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data: blob:; style-src \'unsafe-inline\'; font-src data:; media-src data: blob:">';
+      if(/<head[^>]*>/i.test(doc))doc=doc.replace(/<head[^>]*>/i,tag=>tag+csp);else doc=csp+doc;
+      dialogContent.replaceChildren();const h=document.createElement("h2");h.textContent="HTML-предпросмотр: "+file.file_name;
+      const warning=document.createElement("p");warning.textContent="Изолированный режим: JavaScript и внешние ресурсы заблокированы.";
+      const frame=document.createElement("iframe");frame.className="html-preview";frame.setAttribute("sandbox","");frame.setAttribute("referrerpolicy","no-referrer");frame.srcdoc=doc;
+      dialogContent.append(h,warning,frame);if(!dialog.open)dialog.showModal();return;
+    }
+    const link=document.createElement("a");link.href=data.signedUrl;link.target="_blank";link.rel="noopener noreferrer";if(download)link.download=file.file_name;document.body.append(link);link.click();link.remove();
+  }catch(e){fail("Не удалось открыть вложение",e);}
+}
 function noteKey(){return "funtext:saved:"+ (user?.id || "local");}
 function showNotes(){
   welcome("Избранное","Личные заметки сохраняются только в этом браузере.");
@@ -71,6 +97,13 @@ async function selectChat(id){
   const {data,error}=await sb.from("ft_messages").select("id,conversation_id,sender_id,content,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(500);
   if(activeId!==id)return;if(error){fail("Не удалось загрузить сообщения",error);return;}
   messages.replaceChildren();rendered.clear();if(!data.length)welcome(c.title,"Беседа создана. Отправь первое сообщение или поделись кодом приглашения.");data.forEach(renderMessage);
+  const {data:files,error:fileError}=await sb.from("ft_attachments").select("id,conversation_id,uploader_id,file_name,storage_path,content_type,size_bytes,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(200);
+  if(activeId!==id)return;
+  if(fileError)fail("Не удалось загрузить вложения",fileError);else files.forEach(renderAttachment);
+  subscription=sb.channel("ft-chat-"+id)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);})
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_attachments",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderAttachment(payload.new);})
+    .subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
   subscription=sb.channel("ft-chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);}).subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
 }
 async function createChat(){
@@ -105,7 +138,23 @@ $("#profileBtn").addEventListener("click",()=>{
   dialogBox("Анонимный аккаунт","ID сессии: "+user.id+"\n\nСохраняй данные сайта, чтобы не потерять сессию. Восстановление аккаунта не реализовано. Сквозного шифрования нет — не отправляй секретные данные.","Скопировать ID",()=>navigator.clipboard.writeText(user.id));
 });
 $("#infoBtn").addEventListener("click",()=>dialogBox("О FunText","Облачные беседы работают через Supabase. «Избранное» хранится локально. Сейчас нет E2EE, Tor-маршрутизации или гарантии анонимности от инфраструктуры и сетевых операторов.","Понятно",()=>{}));
-$("#attachBtn").addEventListener("click",()=>dialogBox("Вложения","Загрузка файлов и HTML-просмотр пока не реализованы. Их нужно добавить отдельно с лимитами и безопасной изоляцией.","Понятно",()=>{}));
+$("#attachBtn").addEventListener("click",()=>{
+  if(activeId===SAVED){fail("Сначала открой беседу",new Error("Вложения можно отправлять в облачную беседу, а не в «Избранное»."));return;}
+  $("#fileInput").click();
+});
+$("#fileInput").addEventListener("change",async()=>{
+  const file=$("#fileInput").files?.[0];$("#fileInput").value="";if(!file)return;
+  if(file.size<1||file.size>10485760){fail("Размер файла не подходит",new Error("Разрешены файлы размером до 10 МБ."));return;}
+  const button=$("#attachBtn");button.disabled=true;
+  try{
+    const safeName=file.name.replace(/[\\/\\\\\\x00-\\x1f]/g,"_").slice(0,255)||"attachment";
+    const path=activeId+"/"+crypto.randomUUID()+"/"+safeName;
+    const {error:uploadError}=await sb.storage.from("ft-attachments").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});
+    if(uploadError)throw uploadError;
+    const {data,error}=await sb.from("ft_attachments").insert({conversation_id:activeId,uploader_id:user.id,file_name:safeName,storage_path:path,content_type:file.type||"application/octet-stream",size_bytes:file.size}).select("id,conversation_id,uploader_id,file_name,storage_path,content_type,size_bytes,created_at").single();
+    if(error)throw error;renderAttachment(data);
+  }catch(e){fail("Не удалось загрузить файл",e);}finally{button.disabled=false;}
+});
 async function initializeAuth(){
   const status=document.querySelector(".connection span:last-child"),name=$("#profileBtn .profile-meta strong"),pid=$("#profileBtn .profile-meta small"),avatar=$("#profileBtn .user-avatar");
   if(!sb){authError="Клиент Supabase не загрузился";if(status)status.textContent="Supabase недоступен";return;}
