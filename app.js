@@ -140,20 +140,21 @@ $("#profileBtn").addEventListener("click",()=>{
 $("#infoBtn").addEventListener("click",()=>dialogBox("О FunText","Облачные беседы работают через Supabase. «Избранное» хранится локально. Сейчас нет E2EE, Tor-маршрутизации или гарантии анонимности от инфраструктуры и сетевых операторов.","Понятно",()=>{}));
 $("#attachBtn").addEventListener("click",()=>{
   if(activeId===SAVED){fail("Сначала открой беседу",new Error("Вложения можно отправлять в облачную беседу, а не в «Избранное»."));return;}
-  $("#fileInput").click();
-});
-$("#fileInput").addEventListener("change",async()=>{
-  const file=$("#fileInput").files?.[0];$("#fileInput").value="";if(!file)return;
-  if(file.size<1||file.size>10485760){fail("Размер файла не подходит",new Error("Разрешены файлы размером до 10 МБ."));return;}
-  const button=$("#attachBtn");button.disabled=true;
-  try{
-    const safeName=file.name.replace(/[\\/\\\\\\x00-\\x1f]/g,"_").slice(0,255)||"attachment";
-    const path=activeId+"/"+crypto.randomUUID()+"/"+safeName;
-    const {error:uploadError}=await sb.storage.from("ft-attachments").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});
-    if(uploadError)throw uploadError;
-    const {data,error}=await sb.from("ft_attachments").insert({conversation_id:activeId,uploader_id:user.id,file_name:safeName,storage_path:path,content_type:file.type||"application/octet-stream",size_bytes:file.size}).select("id,conversation_id,uploader_id,file_name,storage_path,content_type,size_bytes,created_at").single();
-    if(error)throw error;renderAttachment(data);
-  }catch(e){fail("Не удалось загрузить файл",e);}finally{button.disabled=false;}
+  const picker=document.createElement("input");picker.type="file";
+  picker.onchange=async()=>{
+    const file=picker.files?.[0];if(!file)return;
+    if(file.size<1||file.size>10485760){fail("Размер файла не подходит",new Error("Разрешены файлы размером до 10 МБ."));return;}
+    const button=$("#attachBtn");button.disabled=true;
+    try{
+      const safeName=file.name.split("/").pop().split(String.fromCharCode(92)).pop().slice(0,255)||"attachment";
+      const path=activeId+"/"+crypto.randomUUID()+"/"+safeName;
+      const {error:uploadError}=await sb.storage.from("ft-attachments").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});
+      if(uploadError)throw uploadError;
+      const {data,error}=await sb.from("ft_attachments").insert({conversation_id:activeId,uploader_id:user.id,file_name:safeName,storage_path:path,content_type:file.type||"application/octet-stream",size_bytes:file.size}).select("id,conversation_id,uploader_id,file_name,storage_path,content_type,size_bytes,created_at").single();
+      if(error)throw error;renderAttachment(data);
+    }catch(e){fail("Не удалось загрузить файл",e);}finally{button.disabled=false;}
+  };
+  picker.click();
 });
 async function initializeAuth(){
   const status=document.querySelector(".connection span:last-child"),name=$("#profileBtn .profile-meta strong"),pid=$("#profileBtn .profile-meta small"),avatar=$("#profileBtn .user-avatar");
