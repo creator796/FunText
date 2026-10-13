@@ -154,3 +154,6 @@ body[data-theme="funpay"] .theme-choice.selected{border-color:#4d91e8}
 body[data-theme="funpay"] .theme-choice.selected .theme-choice-mark{box-shadow:0 0 0 1px #4d91e855}
 body[data-theme="tor"] .theme-choice.selected .theme-choice-mark{box-shadow:0 0 0 1px #a970ff55}
 @media(max-width:420px){.theme-choices{grid-template-columns:1fr}.theme-choice{padding:10px}}
+
+/* Keep the Tor onion glyph clearly visible across browsers */
+.theme-logo.tor-logo{font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif;font-size:27px;line-height:1;font-style:normal;padding:0;}
