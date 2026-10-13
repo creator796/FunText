@@ -186,3 +186,64 @@ body[data-theme="tor"] .theme-choice.selected .theme-choice-mark{box-shadow:0 0 
 .theme-choice{gap:12px}
 .theme-choice-meta{position:relative;z-index:1}
 @media(max-width:420px){.theme-choice-mark{flex-basis:58px;width:58px;height:58px}}
+
+
+/* Full-page theme artwork: one large, subtle brand image behind the entire app. */
+body{
+  position:relative;
+  isolation:isolate;
+  background:transparent;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  background-position:center center;
+  background-size:min(72vmin, 820px) auto;
+  opacity:.38;
+  filter:saturate(.92);
+  transition:opacity .2s ease;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(115deg,rgba(4,8,16,.82),rgba(4,8,16,.66) 48%,rgba(4,8,16,.82));
+}
+body[data-theme="tor"]::before{
+  background-image:url("https://www.torproject.org/static/images/tor-browser/Browser_Icon.svg");
+}
+body[data-theme="funpay"]::before{
+  background-image:url("https://funpay.com/img/layout/logo-funpay.svg");
+  background-size:min(78vw, 1080px) auto;
+  opacity:.16;
+}
+body[data-theme="tor"]::after{
+  background:linear-gradient(115deg,rgba(12,7,20,.83),rgba(12,7,20,.65) 48%,rgba(12,7,20,.83));
+}
+body[data-theme="funpay"]::after{
+  background:linear-gradient(115deg,rgba(5,12,24,.88),rgba(5,12,24,.72) 48%,rgba(5,12,24,.88));
+}
+.app-shell{background:transparent}
+.sidebar{background:rgba(13,25,43,.88);backdrop-filter:blur(10px)}
+.main-panel{background:linear-gradient(180deg,rgba(8,15,29,.48),rgba(8,15,29,.72))}
+.topbar{background:rgba(12,23,40,.72);backdrop-filter:blur(12px)}
+.notice,.composer{backdrop-filter:blur(12px)}
+body[data-theme="tor"] .sidebar{background:rgba(23,18,34,.88)}
+body[data-theme="tor"] .main-panel{background:linear-gradient(180deg,rgba(16,13,24,.48),rgba(16,13,24,.72))}
+body[data-theme="tor"] .topbar{background:rgba(23,17,33,.74)}
+body[data-theme="funpay"] .sidebar{background:rgba(13,25,43,.9)}
+body[data-theme="funpay"] .main-panel{background:linear-gradient(180deg,rgba(8,15,29,.5),rgba(8,15,29,.75))}
+body[data-theme="funpay"] .topbar{background:rgba(12,23,40,.76)}
+@media(max-width:720px){
+  body::before{background-size:min(92vw, 560px) auto;opacity:.28}
+  body[data-theme="funpay"]::before{background-size:96vw auto;opacity:.12}
+  body::after{background:rgba(4,8,16,.78)}
+  body[data-theme="tor"]::after{background:rgba(12,7,20,.78)}
+  body[data-theme="funpay"]::after{background:rgba(5,12,24,.84)}
+}
