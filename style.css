@@ -473,3 +473,82 @@ body[data-theme="tor"] select:focus {
     animation: none !important;
   }
 }
+
+
+/* Match Tor Browser's actual cyan-to-violet accent gradient. */
+@keyframes torBrowserGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+body[data-theme="tor"] {
+  background-color: #101525;
+}
+body[data-theme="tor"]::before {
+  background-image:
+    radial-gradient(ellipse at 12% 18%, rgba(20,218,221,.22), transparent 43%),
+    radial-gradient(ellipse at 88% 82%, rgba(128,109,236,.28), transparent 47%),
+    linear-gradient(125deg, #101525 0%, #171a35 48%, #101b30 100%);
+  background-size: 200% 200%, 200% 200%, 300% 300%;
+  animation: torBrowserGradient 22s ease-in-out infinite;
+  opacity: 1;
+}
+body[data-theme="tor"]::after {
+  background: linear-gradient(115deg, rgba(5,10,22,.32), rgba(8,12,28,.12) 50%, rgba(5,8,20,.34));
+}
+body[data-theme="tor"] .app-shell,
+body[data-theme="tor"] .main-panel {
+  background-color: transparent;
+}
+body[data-theme="tor"] .sidebar {
+  background: rgba(12,18,35,.78);
+  border-right-color: rgba(20,218,221,.17);
+  backdrop-filter: blur(18px);
+}
+body[data-theme="tor"] .topbar {
+  background: rgba(12,18,35,.66);
+  border-bottom-color: rgba(128,109,236,.22);
+  backdrop-filter: blur(18px);
+}
+body[data-theme="tor"] .topbar::after {
+  content: "";
+  position: absolute;
+  height: 3px;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(20,218,221) 0%, rgb(128,109,236) 100%);
+  background-size: 200% 100%;
+  animation: torBrowserGradient 8s linear infinite;
+  opacity: .9;
+}
+body[data-theme="tor"] .new-chat,
+body[data-theme="tor"] .send-btn,
+body[data-theme="tor"] .primary-btn {
+  background-image: linear-gradient(100deg, rgb(20,218,221) 0%, rgb(128,109,236) 52%, rgb(20,218,221) 100%);
+  background-size: 220% 100%;
+  animation: torBrowserGradient 9s ease-in-out infinite;
+  border-color: rgba(128,109,236,.42);
+  color: #fff;
+}
+body[data-theme="tor"] .chat-item.active,
+body[data-theme="tor"] .chat-item:hover {
+  background: linear-gradient(100deg, rgba(20,218,221,.10), rgba(128,109,236,.15));
+}
+body[data-theme="tor"] .composer:focus-within,
+body[data-theme="tor"] input:focus,
+body[data-theme="tor"] textarea:focus,
+body[data-theme="tor"] select:focus {
+  border-color: rgb(20,218,221);
+  box-shadow: 0 0 0 3px rgba(20,218,221,.10);
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="tor"]::before,
+  body[data-theme="tor"] .topbar::after,
+  body[data-theme="tor"] .new-chat,
+  body[data-theme="tor"] .send-btn,
+  body[data-theme="tor"] .primary-btn {
+    animation: none !important;
+  }
+}
