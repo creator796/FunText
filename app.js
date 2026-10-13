@@ -122,9 +122,24 @@ async function createChat(){
   const c=chats.find(x=>x.id===id);if(c)dialogBox("Беседа создана","Код приглашения:\n\n"+c.invite_code+"\n\nПередай код участникам. Любой человек с этим кодом сможет присоединиться.","Скопировать код",()=>navigator.clipboard.writeText(c.invite_code));
 }
 async function joinChat(){
-  if(!user){fail("Нет подключения",new Error(authError||"Авторизация не готова"));return;}
-  const code=prompt("Введи код приглашения:");if(!code||!code.trim())return;
-  const {data:id,error}=await sb.rpc("ft_join_conversation",{p_invite_code:code.trim().toUpperCase()});if(error){fail("Не удалось присоединиться",error);return;}
+  if(!sb){fail("Нет подключения",new Error("Клиент Supabase не загружен. Обнови страницу."));return;}
+  if(!user){fail("Нет подключения",new Error(authError||"Анонимная авторизация не готова. Нажми «Повторить» в профиле."));return;}
+  const raw=prompt("Введи код приглашения (20 символов). Можно вставить код с пробелами или дефисами:");
+  if(!raw||!raw.trim())return;
+  // Invite codes are case-insensitive; ignore whitespace and common separators copied with the code.
+  const code=raw.toUpperCase().replace(/[\\s-]+/g,"");
+  if(!/^[A-Z0-9]{10,32}$/.test(code)){
+    dialogBox("Код не распознан","Код приглашения должен содержать от 10 до 32 латинских букв или цифр. Нужен именно код из окна «Беседа создана», а не название беседы или ID аккаунта.","Понятно",()=>{});
+    return;
+  }
+  const {data:id,error}=await sb.rpc("ft_join_conversation",{p_invite_code:code});
+  if(error){
+    const message=error.message||String(error);
+    if(/неверный код|не найдена|not found|invalid invite/i.test(message)){
+      dialogBox("Беседа не найдена","Такого кода нет в текущей базе Supabase. Попроси владельца открыть беседу и заново скопировать именно «Код приглашения». Проверь, что обе стороны используют один и тот же проект Supabase.","Понятно",()=>{});
+    }else fail("Не удалось присоединиться",error);
+    return;
+  }
   try{await loadChats();await selectChat(id);}catch(e){fail("Не удалось открыть беседу",e);}
 }
 $("#messageForm").addEventListener("submit",async ev=>{
