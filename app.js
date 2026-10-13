@@ -61,7 +61,7 @@ function openSettings() {
 
   const theme = document.createElement("select");
   theme.className = "dialog-input";
-  for (const [value, label] of [["tor", "Tor — текущая тёмная тема"], ["funpay", "FunPay — жёлто-чёрная тема"]]) {
+  for (const [value, label] of [["tor", "Tor — фиолетовая тема"], ["funpay", "FunPay — тёмно-синяя тема"]]) {
     const option = document.createElement("option"); option.value = value; option.textContent = label; theme.append(option);
   }
   theme.value = current.theme;
