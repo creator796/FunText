@@ -354,3 +354,22 @@ body[data-theme="tor"]::after{
     repeating-linear-gradient(135deg, rgba(218,194,255,.022) 0px, rgba(218,194,255,.022) 1px, transparent 1px, transparent 9px);
   background-color:rgba(12,8,18,.16);
 }
+
+
+/* Tor-inspired home-page treatment: flat deep-purple canvas, subtle geometric texture,
+   no bubbles, circles, radial gradients, or oversized logo artwork. */
+body[data-theme="tor"]::before{
+  background-image:
+    linear-gradient(135deg, rgba(105,69,145,.10) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(105,69,145,.07) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(105,69,145,.05) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(105,69,145,.07) 25%, #17111f 25%);
+  background-size: 88px 88px;
+  background-position: 0 0, 0 44px, 44px -44px, -44px 0;
+  background-repeat:repeat;
+  opacity:.42;
+  filter:none;
+}
+body[data-theme="tor"]::after{
+  background:linear-gradient(135deg,rgba(17,11,25,.40),rgba(17,11,25,.22) 50%,rgba(17,11,25,.40));
+}
