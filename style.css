@@ -552,3 +552,80 @@ body[data-theme="tor"] select:focus {
     animation: none !important;
   }
 }
+
+
+/* Tor start-page motif: purple circular artwork concentrated along the bottom edge. */
+body[data-theme="tor"] {
+  background: #241333;
+}
+body[data-theme="tor"]::before {
+  background-image:
+    radial-gradient(circle, rgba(167,111,222,.72) 0 3px, transparent 3.8px),
+    radial-gradient(circle, rgba(139,83,197,.58) 0 5px, transparent 5.8px),
+    radial-gradient(circle, rgba(190,145,230,.42) 0 2px, transparent 2.8px),
+    radial-gradient(circle, rgba(119,65,176,.64) 0 8px, transparent 8.8px),
+    radial-gradient(circle, rgba(164,109,214,.46) 0 4px, transparent 4.8px),
+    radial-gradient(circle, rgba(132,76,189,.50) 0 6px, transparent 6.8px),
+    linear-gradient(180deg, #241333 0%, #28143b 58%, #301849 100%);
+  background-size:
+    44px 44px,
+    72px 72px,
+    31px 31px,
+    96px 96px,
+    57px 57px,
+    83px 83px,
+    100% 100%;
+  background-position:
+    4px calc(100% - 18px),
+    28px calc(100% + 8px),
+    8px calc(100% - 74px),
+    60px calc(100% + 25px),
+    110px calc(100% - 12px),
+    145px calc(100% + 18px),
+    center;
+  background-repeat:
+    repeat-x,
+    repeat-x,
+    repeat-x,
+    repeat-x,
+    repeat-x,
+    repeat-x,
+    no-repeat;
+  animation: none;
+  opacity: 1;
+  filter: none;
+}
+body[data-theme="tor"]::after {
+  background:
+    linear-gradient(180deg, rgba(22,11,34,.04) 0%, rgba(22,11,34,.02) 56%, rgba(22,11,34,.16) 100%);
+}
+body[data-theme="tor"] .sidebar {
+  background: rgba(30,16,46,.86);
+  border-right-color: rgba(177,128,220,.18);
+}
+body[data-theme="tor"] .topbar {
+  background: rgba(37,20,55,.78);
+  border-bottom-color: rgba(177,128,220,.16);
+}
+body[data-theme="tor"] .main-panel {
+  background: rgba(32,17,47,.20);
+}
+body[data-theme="tor"] .new-chat,
+body[data-theme="tor"] .send-btn,
+body[data-theme="tor"] .primary-btn {
+  background: linear-gradient(135deg, #8250b4, #60368d);
+  animation: none;
+}
+@media (max-width: 720px) {
+  body[data-theme="tor"]::before {
+    background-size:
+      36px 36px,
+      60px 60px,
+      27px 27px,
+      80px 80px,
+      48px 48px,
+      68px 68px,
+      100% 100%;
+    opacity: 1;
+  }
+}
