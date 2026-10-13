@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="FunText — приватные беседы без лишнего шума.">
+  <title>FunText</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span class="brand-mark">F</span><span>FunText</span><span class="beta">BETA</span></div>
+      <button class="new-chat" id="newChatBtn" type="button"><span>＋</span> Новая беседа</button>
+      <div class="section-label">ВАШИ БЕСЕДЫ</div>
+      <div class="chat-list" id="chatList">
+        <button class="chat-item active" data-chat="Избранное" type="button">
+          <span class="avatar saved">★</span><span class="chat-meta"><strong>Избранное</strong><small>Личные заметки</small></span>
+        </button>
+        <div class="empty-hint" id="emptyHint">Пока здесь тихо. Создайте беседу.</div>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="connection"><span class="status-dot"></span><span>Интерфейс запущен</span></div>
+        <button class="profile-button" id="profileBtn" type="button">
+          <span class="avatar user-avatar">?</span><span class="profile-meta"><strong>Гость</strong><small>ID ещё не создан</small></span><span class="more">···</span>
+        </button>
+      </div>
+    </aside>
+    <section class="main-panel">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenuBtn" aria-label="Открыть список бесед" type="button">☰</button>
+        <div class="current-chat-avatar" id="currentAvatar">★</div>
+        <div class="current-chat-info"><h1 id="currentTitle">Избранное</h1><p id="currentSubtitle">Личное пространство</p></div>
+        <div class="topbar-actions"><span class="mode-chip"><span class="mode-dot"></span> Локальный режим</span><button class="icon-button" id="infoBtn" aria-label="Информация" type="button">ⓘ</button></div>
+      </header>
+      <div class="notice"><span>ⓘ</span><p>Это первый прототип интерфейса. Сообщения пока хранятся только в памяти страницы и исчезнут после перезагрузки.</p></div>
+      <div class="messages" id="messages" aria-live="polite">
+        <div class="welcome">
+          <div class="welcome-icon">F</div>
+          <h2>Добро пожаловать в FunText</h2>
+          <p>Начинаем с чистого листа. Здесь появятся ваши беседы и сообщения.</p>
+          <div class="welcome-pills"><span>Без телефона в интерфейсе</span><span>Тёмная тема</span><span>В разработке</span></div>
+        </div>
+      </div>
+      <form class="composer" id="messageForm">
+        <button class="attach-button" id="attachBtn" type="button" aria-label="Вложения" title="Вложения добавим следующим этапом">＋</button>
+        <textarea id="messageInput" rows="1" maxlength="4000" placeholder="Напишите сообщение…" aria-label="Текст сообщения"></textarea>
+        <div class="composer-bottom"><span class="composer-hint">Enter — отправить · Shift+Enter — новая строка</span><button class="send-button" type="submit" aria-label="Отправить сообщение">➤</button></div>
+      </form>
+      <div class="footer-note">FunText · прототип · не предназначен для секретной переписки</div>
+    </section>
+  </main>
+  <dialog id="simpleDialog" class="simple-dialog">
+    <form method="dialog" class="dialog-close-row"><button class="icon-button" aria-label="Закрыть">✕</button></form>
+    <div id="dialogContent"></div>
+  </dialog>
+</body>
+</html>
