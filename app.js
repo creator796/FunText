@@ -162,7 +162,7 @@ function base64UrlToBytes(value) {
 }
 function makeInviteBundle(chat, rawKey) { return chat.invite_code + "." + rawKey; }
 function parseInviteBundle(value) {
-  const match = String(value || "").trim().match(/^([A-Z0-9]{10,32})[.\s/:_-]+([A-Za-z0-9_-]{40,50})$/);
+  const match = String(value || "").trim().match(/^([A-Za-z0-9]{10,32})[.\s/:]+([A-Za-z0-9_-]{40,50})$/);
   if (!match) return null;
   return { inviteCode: match[1].toUpperCase(), rawKey: match[2] };
 }
