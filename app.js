@@ -100,10 +100,19 @@ async function selectChat(id){
   const {data:files,error:fileError}=await sb.from("ft_attachments").select("id,conversation_id,uploader_id,file_name,storage_path,content_type,size_bytes,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(200);
   if(activeId!==id)return;
   if(fileError)fail("Не удалось загрузить вложения",fileError);else files.forEach(renderAttachment);
-  subscription=sb.channel("ft-chat-"+id)
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);})
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_attachments",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderAttachment(payload.new);})
-    .subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
+  // Use a unique topic per subscription. This prevents a second selection/race
+  // from trying to register postgres_changes handlers on an already-subscribed channel.
+  try {
+    const channel = sb.channel("ft-chat-" + id + "-" + crypto.randomUUID());
+    channel
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);})
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_attachments",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderAttachment(payload.new);});
+    subscription = channel.subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
+  } catch (e) {
+    console.error("Realtime subscription setup failed", e);
+    // The conversation remains usable even if live updates cannot be enabled.
+    subscription = null;
+  }
 }
 async function createChat(){
   if(!user){fail("Нет подключения",new Error(authError||"Авторизация не готова"));return;}
