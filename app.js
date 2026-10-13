@@ -119,7 +119,7 @@ function openSettings() {
 
   const note = document.createElement("p");
   note.className = "settings-warning";
-  note.textContent = "Приватность: аккаунт создаётся без почты и телефона, но сообщения и метаданные бесед хранятся в Supabase. Сервер получает сетевые данные соединения. Сквозного шифрования (E2EE) и встроенного подключения к Tor пока нет; тема «Tor» меняет только оформление.";
+  note.textContent = "Приватность: текст новых сообщений шифруется в браузере AES-256-GCM. Supabase видит метаданные бесед и сетевые данные соединения. Вложения и названия бесед пока не E2EE; встроенного Tor нет. Защищённое приглашение содержит секретный ключ — передавай его отдельно и только нужным людям.";
   const actions = document.createElement("div"); actions.className = "settings-actions";
   const reset = document.createElement("button"); reset.type = "button"; reset.className = "dialog-secondary"; reset.textContent = "Сбросить";
   const save = document.createElement("button"); save.type = "button"; save.className = "dialog-primary"; save.textContent = "Сохранить";
@@ -335,7 +335,7 @@ async function createChat(){
 async function joinChat(){
   if(!sb){fail("Нет подключения",new Error("Клиент Supabase не загружен. Обнови страницу."));return;}
   if(!user){fail("Нет подключения",new Error(authError||"Анонимная авторизация не готова. Нажми «Повторить» в профиле."));return;}
-  const raw=prompt("Введи код приглашения (20 символов). Можно вставить код с пробелами или дефисами:");
+  const raw=prompt("Вставь защищённое приглашение целиком в формате КОД.КЛЮЧ, полученное от участника через доверенный канал:");
   if(!raw||!raw.trim())return;
   // Invite codes are case-insensitive; ignore whitespace and common separators copied with the code.
   const bundle=parseInviteBundle(raw);
