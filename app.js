@@ -144,6 +144,72 @@ function openSettings() {
 }
 applySettings();
 
+/* Text-only E2EE using Web Crypto AES-256-GCM. Keys stay in this browser;
+   share the invite bundle through a separate trusted channel. */
+const E2EE_PREFIX = "ftenc1:";
+const E2EE_KEY_PREFIX = "funtext:e2ee:key:";
+function e2eeStorageKey(conversationId) { return E2EE_KEY_PREFIX + conversationId; }
+function bytesToBase64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+function base64UrlToBytes(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, ch => ch.charCodeAt(0));
+}
+function makeInviteBundle(chat, rawKey) { return chat.invite_code + "." + rawKey; }
+function parseInviteBundle(value) {
+  const match = String(value || "").trim().match(/^([A-Z0-9]{10,32})[.\s/:_-]+([A-Za-z0-9_-]{40,50})$/);
+  if (!match) return null;
+  return { inviteCode: match[1].toUpperCase(), rawKey: match[2] };
+}
+async function generateConversationKey(conversationId) {
+  const raw = new Uint8Array(32);
+  crypto.getRandomValues(raw);
+  const encoded = bytesToBase64Url(raw);
+  const key = await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  localStorage.setItem(e2eeStorageKey(conversationId), encoded);
+  return { rawKey: encoded, key };
+}
+async function getConversationKey(conversationId) {
+  let raw;
+  try { raw = localStorage.getItem(e2eeStorageKey(conversationId)); } catch (_) { raw = null; }
+  if (!raw) return null;
+  try {
+    const bytes = base64UrlToBytes(raw);
+    if (bytes.length !== 32) return null;
+    return await crypto.subtle.importKey("raw", bytes, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  } catch (e) {
+    console.warn("Invalid local E2EE key", e);
+    return null;
+  }
+}
+async function encryptMessage(conversationId, plaintext) {
+  const key = await getConversationKey(conversationId);
+  if (!key) throw new Error("Для этой беседы нет ключа шифрования. Открой «Информация» и импортируй защищённое приглашение.");
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(plaintext)));
+  const packed = new Uint8Array(iv.length + encrypted.length);
+  packed.set(iv, 0); packed.set(encrypted, iv.length);
+  return E2EE_PREFIX + bytesToBase64Url(packed);
+}
+async function decryptMessage(conversationId, storedContent) {
+  if (!storedContent.startsWith(E2EE_PREFIX)) return { text: storedContent, encrypted: false };
+  const key = await getConversationKey(conversationId);
+  if (!key) return { text: "🔒 Зашифрованное сообщение — импортируй ключ через «Информация».", encrypted: true, locked: true };
+  try {
+    const packed = base64UrlToBytes(storedContent.slice(E2EE_PREFIX.length));
+    if (packed.length < 29) throw new Error("Invalid encrypted payload");
+    const clear = await crypto.subtle.decrypt({ name: "AES-GCM", iv: packed.slice(0, 12) }, key, packed.slice(12));
+    return { text: new TextDecoder().decode(clear), encrypted: true };
+  } catch (_) {
+    return { text: "🔒 Не удалось расшифровать: ключ не совпадает или данные повреждены.", encrypted: true, locked: true };
+  }
+}
+
 function time(value) { return new Intl.DateTimeFormat("ru-RU", {hour:"2-digit",minute:"2-digit"}).format(new Date(value || Date.now())); }
 function dialogBox(title, body, actionText, action) {
   dialogContent.replaceChildren();
@@ -168,13 +234,19 @@ function welcome(title,desc) {
   const h=document.createElement("h2"); h.textContent=title;
   const p=document.createElement("p"); p.textContent=desc; box.append(mark,h,p); messages.append(box);
 }
-function renderMessage(m) {
+async function renderMessage(m) {
   const id=String(m.id ?? "");
   if(id && rendered.has(id)) return;
   if(id) rendered.add(id);
   const old=messages.querySelector(".welcome"); if(old) old.remove();
   const own=m.sender_id===user?.id, b=document.createElement("div");
-  b.className=own?"message":"message incoming"; b.textContent=m.content;
+  b.className=own?"message":"message incoming";
+  if (m.conversation_id && typeof m.content === "string") {
+    const decoded = await decryptMessage(m.conversation_id, m.content);
+    b.textContent = decoded.encrypted ? decoded.text : "⚠ Старое сообщение без E2EE\n" + decoded.text;
+    if (decoded.locked) b.classList.add("message-locked");
+    else if (decoded.encrypted) b.classList.add("message-encrypted");
+  } else b.textContent=m.content;
   if(!own && m.sender_id){const a=document.createElement("span");a.className="message-author";a.textContent="Участник "+m.sender_id.slice(0,6);b.prepend(a);}
   const t=document.createElement("span");t.className="message-time";t.textContent=time(m.created_at);b.append(t);messages.append(b);messages.scrollTop=messages.scrollHeight;
 }
@@ -233,7 +305,7 @@ async function selectChat(id){
   if(innerWidth<=720)$("#sidebar").classList.remove("open");
   const {data,error}=await sb.from("ft_messages").select("id,conversation_id,sender_id,content,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(500);
   if(activeId!==id)return;if(error){fail("Не удалось загрузить сообщения",error);return;}
-  messages.replaceChildren();rendered.clear();if(!data.length)welcome(c.title,"Беседа создана. Отправь первое сообщение или поделись кодом приглашения.");data.forEach(renderMessage);
+  messages.replaceChildren();rendered.clear();if(!data.length)welcome(c.title,"Беседа создана. Отправь первое сообщение или поделись защищённым приглашением.");for (const message of data) await renderMessage(message);
   const {data:files,error:fileError}=await sb.from("ft_attachments").select("id,conversation_id,uploader_id,file_name,storage_path,content_type,size_bytes,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(200);
   if(activeId!==id)return;
   if(fileError)fail("Не удалось загрузить вложения",fileError);else files.forEach(renderAttachment);
@@ -255,8 +327,10 @@ async function createChat(){
   if(!user){fail("Нет подключения",new Error(authError||"Авторизация не готова"));return;}
   const title=prompt("Название беседы (до 48 символов):");if(!title||!title.trim())return;
   const {data:id,error}=await sb.rpc("ft_create_conversation",{p_title:title.trim().slice(0,48)});if(error){fail("Не удалось создать беседу",error);return;}
+  let rawKey;
+  try { ({rawKey}=await generateConversationKey(id)); } catch(e) { fail("Не удалось создать ключ шифрования",e); return; }
   try{await loadChats();await selectChat(id);}catch(e){fail("Не удалось обновить список",e);return;}
-  const c=chats.find(x=>x.id===id);if(c)dialogBox("Беседа создана","Код приглашения:\n\n"+c.invite_code+"\n\nПередай код участникам. Любой человек с этим кодом сможет присоединиться.","Скопировать код",()=>navigator.clipboard.writeText(c.invite_code));
+  const c=chats.find(x=>x.id===id);if(c){const bundle=makeInviteBundle(c,rawKey);dialogBox("Беседа создана — E2EE включено","Защищённое приглашение (содержит секретный ключ):\n\n"+bundle+"\n\nПередавай его только нужным людям через отдельный доверенный канал. Не публикуй его открыто. Потеря ключа означает потерю доступа к сообщениям.","Скопировать приглашение",()=>navigator.clipboard.writeText(bundle));}
 }
 async function joinChat(){
   if(!sb){fail("Нет подключения",new Error("Клиент Supabase не загружен. Обнови страницу."));return;}
@@ -264,11 +338,12 @@ async function joinChat(){
   const raw=prompt("Введи код приглашения (20 символов). Можно вставить код с пробелами или дефисами:");
   if(!raw||!raw.trim())return;
   // Invite codes are case-insensitive; ignore whitespace and common separators copied with the code.
-  const code=raw.toUpperCase().replace(/[\\s-]+/g,"");
-  if(!/^[A-Z0-9]{10,32}$/.test(code)){
-    dialogBox("Код не распознан","Код приглашения должен содержать от 10 до 32 латинских букв или цифр. Нужен именно код из окна «Беседа создана», а не название беседы или ID аккаунта.","Понятно",()=>{});
+  const bundle=parseInviteBundle(raw);
+  if(!bundle){
+    dialogBox("Нужно защищённое приглашение","Вставь полный код вида КОД.КЛЮЧ из окна создателя беседы. Он содержит код вступления и секретный ключ шифрования. Не пересылай его в публичные чаты.","Понятно",()=>{});
     return;
   }
+  const code=bundle.inviteCode;
   const {data:id,error}=await sb.rpc("ft_join_conversation",{p_invite_code:code});
   if(error){
     const message=error.message||String(error);
@@ -277,7 +352,13 @@ async function joinChat(){
     }else fail("Не удалось присоединиться",error);
     return;
   }
-  try{await loadChats();await selectChat(id);}catch(e){fail("Не удалось открыть беседу",e);}
+  try {
+    const rawBytes=base64UrlToBytes(bundle.rawKey);
+    if(rawBytes.length!==32) throw new Error("Ключ шифрования имеет неверный формат");
+    await crypto.subtle.importKey("raw",rawBytes,{name:"AES-GCM"},false,["encrypt","decrypt"]);
+    localStorage.setItem(e2eeStorageKey(id),bundle.rawKey);
+    await loadChats();await selectChat(id);
+  } catch(e) { fail("Не удалось применить ключ шифрования",e); }
 }
 $("#messageForm").addEventListener("submit",async ev=>{
   ev.preventDefault();const content=input.value.trim();if(!content)return;
@@ -285,8 +366,12 @@ $("#messageForm").addEventListener("submit",async ev=>{
     try{const arr=JSON.parse(localStorage.getItem(noteKey())||"[]");const m={id:"local-"+crypto.randomUUID(),content,created_at:new Date().toISOString()};arr.push(m);localStorage.setItem(noteKey(),JSON.stringify(arr.slice(-1000)));renderMessage({...m,sender_id:user?.id});input.value="";input.style.height="34px";}catch(e){fail("Не удалось сохранить заметку",e);}return;
   }
   const button=$(".send-button");button.disabled=true;
-  try{const {data,error}=await sb.from("ft_messages").insert({conversation_id:activeId,sender_id:user.id,content}).select("id,conversation_id,sender_id,content,created_at").single();if(error)throw error;renderMessage(data);input.value="";input.style.height="34px";}
-  catch(e){fail("Сообщение не отправлено",e);}finally{button.disabled=false;input.focus();}
+  try {
+    const encryptedContent=await encryptMessage(activeId,content);
+    const {data,error}=await sb.from("ft_messages").insert({conversation_id:activeId,sender_id:user.id,content:encryptedContent}).select("id,conversation_id,sender_id,content,created_at").single();
+    if(error)throw error;
+    await renderMessage(data);input.value="";input.style.height="34px";
+  } catch(e){fail("Сообщение не отправлено",e);}finally{button.disabled=false;input.focus();}
 });
 input.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&!ev.shiftKey&&getSettings().enterToSend){ev.preventDefault();$("#messageForm").requestSubmit();}});
 input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,130)+"px";});
@@ -300,7 +385,7 @@ $("#profileBtn").addEventListener("click",()=>{
 });
 async function showConversationInfo(){
   if(activeId===SAVED){
-    dialogBox("О FunText","Облачные беседы работают через Supabase. «Избранное» хранится локально. Сквозного шифрования (E2EE) и Tor нет.","Понятно",()=>{});
+    dialogBox("О FunText","Текст новых сообщений шифруется в браузере с помощью AES-256-GCM. Supabase получает шифротекст, но видит метаданные беседы. Вложения пока не E2EE. Встроенного Tor нет.","Понятно",()=>{});
     return;
   }
   const chat=chats.find(c=>c.id===activeId);
@@ -308,12 +393,21 @@ async function showConversationInfo(){
   dialogContent.replaceChildren();
   const heading=document.createElement("h2");heading.textContent="Информация о беседе";
   const title=document.createElement("p");title.className="group-info-title";title.textContent=chat.title;
-  const codeLabel=document.createElement("label");codeLabel.className="group-info-label";codeLabel.textContent="Код приглашения";
-  const code=document.createElement("code");code.className="invite-code";code.textContent=chat.invite_code||"Код недоступен";
+  const codeLabel=document.createElement("label");codeLabel.className="group-info-label";codeLabel.textContent="Защищённое приглашение (секрет)";
+  const code=document.createElement("code");code.className="invite-code";
+  let storedKey=null;try{storedKey=localStorage.getItem(e2eeStorageKey(chat.id));}catch(_){}
+  code.textContent=storedKey?makeInviteBundle(chat,storedKey):"Ключ E2EE на этом устройстве не настроен.";
   const codeActions=document.createElement("div");codeActions.className="group-info-actions";
   const copy=document.createElement("button");copy.type="button";copy.className="dialog-primary";copy.textContent="Скопировать код";
-  copy.onclick=async()=>{try{await navigator.clipboard.writeText(chat.invite_code);copy.textContent="Скопировано";}catch(e){const range=document.createRange();range.selectNodeContents(code);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);copy.textContent="Выдели код и скопируй";}};
+  copy.textContent="Скопировать приглашение";
+  copy.onclick=async()=>{if(!storedKey){alert("Сначала создай или импортируй ключ E2EE.");return;}const bundle=makeInviteBundle(chat,storedKey);try{await navigator.clipboard.writeText(bundle);copy.textContent="Скопировано";}catch(e){const range=document.createRange();range.selectNodeContents(code);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);copy.textContent="Выдели приглашение и скопируй";}};
   codeActions.append(copy);
+  const keyActions=document.createElement("div");keyActions.className="group-info-actions";
+  const importKey=document.createElement("button");importKey.type="button";importKey.className="dialog-secondary";importKey.textContent="Импортировать ключ";
+  importKey.onclick=async()=>{const raw=prompt("Вставь полное защищённое приглашение вида КОД.КЛЮЧ от владельца. Передавай его только через доверенный канал.");if(!raw)return;const bundle=parseInviteBundle(raw);if(!bundle||bundle.inviteCode!==String(chat.invite_code).toUpperCase()){alert("Приглашение не подходит этой беседе или имеет неверный формат.");return;}try{const bytes=base64UrlToBytes(bundle.rawKey);if(bytes.length!==32)throw new Error("Неверная длина ключа");await crypto.subtle.importKey("raw",bytes,{name:"AES-GCM"},false,["encrypt","decrypt"]);localStorage.setItem(e2eeStorageKey(chat.id),bundle.rawKey);await selectChat(chat.id);await showConversationInfo();}catch(e){fail("Не удалось импортировать ключ",e);}};
+  keyActions.append(importKey);
+  if(isOwner&&!storedKey){const createKey=document.createElement("button");createKey.type="button";createKey.className="dialog-primary";createKey.textContent="Создать ключ E2EE";createKey.onclick=async()=>{try{const {rawKey}=await generateConversationKey(chat.id);await showConversationInfo();alert("Ключ создан. Скопируй защищённое приглашение и передай участникам отдельно от публичных каналов.");}catch(e){fail("Не удалось создать ключ",e);}};keyActions.append(createKey);}
+
   const isOwner=chat.created_by===user?.id;
   if(isOwner){
     const rotate=document.createElement("button");rotate.type="button";rotate.className="dialog-secondary";rotate.textContent="Создать новый код";
@@ -322,7 +416,7 @@ async function showConversationInfo(){
   }
   const memberHeading=document.createElement("h3");memberHeading.className="group-info-heading";memberHeading.textContent="Участники";
   const memberList=document.createElement("div");memberList.className="group-member-list";
-  dialogContent.append(heading,title,codeLabel,code,codeActions,memberHeading,memberList);
+  dialogContent.append(heading,title,codeLabel,code,codeActions,keyActions,memberHeading,memberList);
   if(!dialog.open)dialog.showModal();
   try{
     const {data:members,error}=await sb.from("ft_conversation_members").select("user_id,role,joined_at").eq("conversation_id",chat.id).order("joined_at",{ascending:true});
