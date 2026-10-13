@@ -59,13 +59,43 @@ function openSettings() {
   form.className = "settings-form";
   form.addEventListener("submit", ev => ev.preventDefault());
 
-  const theme = document.createElement("select");
-  theme.className = "dialog-input";
-  for (const [value, label] of [["tor", "Tor — фиолетовая тема"], ["funpay", "FunPay — тёмно-синяя тема"]]) {
-    const option = document.createElement("option"); option.value = value; option.textContent = label; theme.append(option);
-  }
+  const theme = document.createElement("input");
+  theme.type = "hidden";
   theme.value = current.theme;
-  form.append(settingsField("Оформление", theme));
+  const themeChoices = document.createElement("div");
+  themeChoices.className = "theme-choices";
+  const themeOptions = [
+    { value: "funpay", name: "FunPay", description: "Тёмно-синий стиль", mark: '<span class="theme-logo funpay-logo" aria-hidden="true"><span>Fun</span><b>Pay</b></span>' },
+    { value: "tor", name: "Tor Browser", description: "Фиолетовый стиль", mark: '<svg class="theme-logo tor-logo" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4C15 4 8 10 8 19c0 8 5 15 16 25 11-10 16-17 16-25C40 10 33 4 24 4Z" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M13 17c6-5 16-5 22 0M11 23c8-5 18-5 26 0M15 29c6-4 12-4 18 0M20 35c3-2 5-2 8 0" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>' }
+  ];
+  const themeButtons = [];
+  for (const item of themeOptions) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "theme-choice";
+    button.dataset.themeValue = item.value;
+    button.setAttribute("aria-pressed", String(item.value === current.theme));
+    const mark = document.createElement("span");
+    mark.className = "theme-choice-mark";
+    mark.innerHTML = item.mark;
+    const meta = document.createElement("span");
+    meta.className = "theme-choice-meta";
+    const name = document.createElement("strong"); name.textContent = item.name;
+    const desc = document.createElement("small"); desc.textContent = item.description;
+    meta.append(name, desc); button.append(mark, meta);
+    button.addEventListener("click", () => {
+      theme.value = item.value;
+      for (const choice of themeButtons) {
+        choice.classList.toggle("selected", choice === button);
+        choice.setAttribute("aria-pressed", String(choice === button));
+      }
+    });
+    themeButtons.push(button);
+    button.classList.toggle("selected", item.value === current.theme);
+    themeChoices.append(button);
+  }
+  form.append(settingsField("Оформление", themeChoices));
+  form.append(theme);
 
   const font = document.createElement("select");
   font.className = "dialog-input";
