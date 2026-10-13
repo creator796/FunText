@@ -1,186 +1,122 @@
-const $ = (selector) => document.querySelector(selector);
-const messages = $("#messages");
-const input = $("#messageInput");
-const chatList = $("#chatList");
-const emptyHint = $("#emptyHint");
-const dialog = $("#simpleDialog");
-const dialogContent = $("#dialogContent");
-
-let activeChat = "Избранное";
-const chatNames = ["Избранное"];
-let authUser = null;
-let authError = null;
-
-const supabaseClient = window.supabase && window.FUNTEXT_SUPABASE_CONFIG
-  ? window.supabase.createClient(window.FUNTEXT_SUPABASE_CONFIG.url, window.FUNTEXT_SUPABASE_CONFIG.publishableKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-    })
+const $ = (s) => document.querySelector(s);
+const messages = $("#messages"), input = $("#messageInput"), chatList = $("#chatList"), dialog = $("#simpleDialog"), dialogContent = $("#dialogContent");
+const SAVED = "saved";
+let activeId = SAVED, activeName = "Избранное", user = null, authError = null, chats = [], subscription = null;
+const rendered = new Set();
+const sb = window.supabase && window.FUNTEXT_SUPABASE_CONFIG
+  ? window.supabase.createClient(window.FUNTEXT_SUPABASE_CONFIG.url, window.FUNTEXT_SUPABASE_CONFIG.publishableKey, { auth: { persistSession: true, autoRefreshToken: true } })
   : null;
 
-function timeNow() {
-  return new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(new Date());
-}
-
-function showDialog(title, body, actionLabel, onAction) {
+function time(value) { return new Intl.DateTimeFormat("ru-RU", {hour:"2-digit",minute:"2-digit"}).format(new Date(value || Date.now())); }
+function dialogBox(title, body, actionText, action) {
   dialogContent.replaceChildren();
-  const heading = document.createElement("h2");
-  heading.textContent = title;
-  const paragraph = document.createElement("p");
-  paragraph.textContent = body;
-  dialogContent.append(heading, paragraph);
-  if (actionLabel && onAction) {
-    const action = document.createElement("button");
-    action.className = "dialog-primary";
-    action.type = "button";
-    action.textContent = actionLabel;
-    action.addEventListener("click", () => {
-      onAction();
-      dialog.close();
-    });
-    dialogContent.append(action);
+  const h = document.createElement("h2"); h.textContent = title;
+  const p = document.createElement("p"); p.textContent = body;
+  dialogContent.append(h,p);
+  if (actionText && action) {
+    const b = document.createElement("button"); b.className = "dialog-primary"; b.textContent = actionText; b.type = "button";
+    b.onclick = async () => { try { await action(); dialog.close(); } catch(e) { p.textContent = "Ошибка: " + (e.message || e); } };
+    dialogContent.append(b);
   }
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
 }
-
-function clearWelcome() {
-  const welcome = messages.querySelector(".welcome");
-  if (welcome) welcome.remove();
+function fail(title,e) {
+  console.error(title,e);
+  dialogBox(title,(e?.message || String(e)) + "\n\nЕсли отсутствуют таблицы/функции, выполни SQL-файл supabase/migrations/202610130001_funtext_chat.sql в Supabase → SQL Editor.","Понятно",()=>{});
 }
-
-function addMessage(text) {
-  clearWelcome();
-  const bubble = document.createElement("div");
-  bubble.className = "message";
-  bubble.textContent = text;
-  const time = document.createElement("span");
-  time.className = "message-time";
-  time.textContent = timeNow();
-  bubble.append(time);
-  messages.append(bubble);
-  messages.scrollTop = messages.scrollHeight;
+function welcome(title,desc) {
+  messages.replaceChildren(); rendered.clear();
+  const box=document.createElement("div"); box.className="welcome";
+  const mark=document.createElement("div"); mark.className="welcome-icon"; mark.textContent=title==="Избранное"?"★":title.slice(0,1).toUpperCase();
+  const h=document.createElement("h2"); h.textContent=title;
+  const p=document.createElement("p"); p.textContent=desc; box.append(mark,h,p); messages.append(box);
 }
-
-function selectChat(name) {
-  activeChat = name;
-  $("#currentTitle").textContent = name;
-  $("#currentSubtitle").textContent = name === "Избранное" ? "Личное пространство" : "Локальная беседа · без синхронизации";
-  $("#currentAvatar").textContent = name === "Избранное" ? "★" : name.slice(0, 1).toUpperCase();
-  document.querySelectorAll(".chat-item").forEach((item) => item.classList.toggle("active", item.dataset.chat === name));
-  if (window.innerWidth <= 720) $("#sidebar").classList.remove("open");
+function renderMessage(m) {
+  const id=String(m.id ?? "");
+  if(id && rendered.has(id)) return;
+  if(id) rendered.add(id);
+  const old=messages.querySelector(".welcome"); if(old) old.remove();
+  const own=m.sender_id===user?.id, b=document.createElement("div");
+  b.className=own?"message":"message incoming"; b.textContent=m.content;
+  if(!own && m.sender_id){const a=document.createElement("span");a.className="message-author";a.textContent="Участник "+m.sender_id.slice(0,6);b.prepend(a);}
+  const t=document.createElement("span");t.className="message-time";t.textContent=time(m.created_at);b.append(t);messages.append(b);messages.scrollTop=messages.scrollHeight;
 }
-
-function createChat() {
-  const name = window.prompt("Название беседы:");
-  if (!name || !name.trim()) return;
-  const cleanName = name.trim().slice(0, 48);
-  if (chatNames.includes(cleanName)) {
-    selectChat(cleanName);
-    return;
+function noteKey(){return "funtext:saved:"+ (user?.id || "local");}
+function showNotes(){
+  welcome("Избранное","Личные заметки сохраняются только в этом браузере.");
+  try { JSON.parse(localStorage.getItem(noteKey())||"[]").forEach(m=>renderMessage({...m,sender_id:user?.id})); } catch(e){console.warn(e);}
+}
+function drawChats(){
+  chatList.replaceChildren();
+  const add=(id,title,subtitle,avatar)=>{const b=document.createElement("button");b.type="button";b.className="chat-item"+(activeId===id?" active":"");
+    const a=document.createElement("span");a.className="avatar saved";a.textContent=avatar;
+    const meta=document.createElement("span");meta.className="chat-meta";const h=document.createElement("strong");h.textContent=title;const s=document.createElement("small");s.textContent=subtitle;meta.append(h,s);b.append(a,meta);
+    b.onclick=()=>selectChat(id);chatList.append(b);};
+  add(SAVED,"Избранное","Личные заметки · только здесь","★");
+  chats.forEach(c=>add(c.id,c.title,"Облачная беседа",(c.title||"Б").slice(0,1).toUpperCase()));
+}
+async function loadChats(){
+  if(!sb||!user)return;
+  const {data,error}=await sb.from("ft_conversations").select("id,title,invite_code,created_at").order("created_at",{ascending:false});
+  if(error)throw error;chats=data||[];drawChats();
+}
+async function stopLive(){if(subscription&&sb){await sb.removeChannel(subscription);subscription=null;}}
+async function selectChat(id){
+  activeId=id;await stopLive();
+  if(id===SAVED){activeName="Избранное";$("#currentTitle").textContent=activeName;$("#currentSubtitle").textContent="Личные заметки · только в этом браузере";$("#currentAvatar").textContent="★";showNotes();drawChats();return;}
+  const c=chats.find(x=>x.id===id);if(!c||!sb)return;activeName=c.title;
+  $("#currentTitle").textContent=c.title;$("#currentSubtitle").textContent="Облачная беседа · синхронизация";$("#currentAvatar").textContent=(c.title||"Б").slice(0,1).toUpperCase();
+  welcome(c.title,"Загружаем сообщения…");drawChats();
+  if(innerWidth<=720)$("#sidebar").classList.remove("open");
+  const {data,error}=await sb.from("ft_messages").select("id,conversation_id,sender_id,content,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(500);
+  if(activeId!==id)return;if(error){fail("Не удалось загрузить сообщения",error);return;}
+  messages.replaceChildren();rendered.clear();if(!data.length)welcome(c.title,"Беседа создана. Отправь первое сообщение или поделись кодом приглашения.");data.forEach(renderMessage);
+  subscription=sb.channel("ft-chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"ft_messages",filter:"conversation_id=eq."+id},payload=>{if(activeId===id)renderMessage(payload.new);}).subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime:",status);});
+}
+async function createChat(){
+  if(!user){fail("Нет подключения",new Error(authError||"Авторизация не готова"));return;}
+  const title=prompt("Название беседы (до 48 символов):");if(!title||!title.trim())return;
+  const {data:id,error}=await sb.rpc("ft_create_conversation",{p_title:title.trim().slice(0,48)});if(error){fail("Не удалось создать беседу",error);return;}
+  try{await loadChats();await selectChat(id);}catch(e){fail("Не удалось обновить список",e);return;}
+  const c=chats.find(x=>x.id===id);if(c)dialogBox("Беседа создана","Код приглашения:\n\n"+c.invite_code+"\n\nПередай код участникам. Любой человек с этим кодом сможет присоединиться.","Скопировать код",()=>navigator.clipboard.writeText(c.invite_code));
+}
+async function joinChat(){
+  if(!user){fail("Нет подключения",new Error(authError||"Авторизация не готова"));return;}
+  const code=prompt("Введи код приглашения:");if(!code||!code.trim())return;
+  const {data:id,error}=await sb.rpc("ft_join_conversation",{p_invite_code:code.trim().toUpperCase()});if(error){fail("Не удалось присоединиться",error);return;}
+  try{await loadChats();await selectChat(id);}catch(e){fail("Не удалось открыть беседу",e);}
+}
+$("#messageForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();const content=input.value.trim();if(!content)return;
+  if(activeId===SAVED){
+    try{const arr=JSON.parse(localStorage.getItem(noteKey())||"[]");const m={id:"local-"+crypto.randomUUID(),content,created_at:new Date().toISOString()};arr.push(m);localStorage.setItem(noteKey(),JSON.stringify(arr.slice(-1000)));renderMessage({...m,sender_id:user?.id});input.value="";input.style.height="34px";}catch(e){fail("Не удалось сохранить заметку",e);}return;
   }
-  chatNames.push(cleanName);
-  emptyHint.hidden = true;
-  const button = document.createElement("button");
-  button.className = "chat-item";
-  button.type = "button";
-  button.dataset.chat = cleanName;
-  const avatar = document.createElement("span");
-  avatar.className = "avatar saved";
-  avatar.textContent = cleanName.slice(0, 1).toUpperCase();
-  const meta = document.createElement("span");
-  meta.className = "chat-meta";
-  const strong = document.createElement("strong");
-  strong.textContent = cleanName;
-  const small = document.createElement("small");
-  small.textContent = "Новая беседа";
-  meta.append(strong, small);
-  button.append(avatar, meta);
-  button.addEventListener("click", () => selectChat(cleanName));
-  chatList.append(button);
-  selectChat(cleanName);
-  messages.replaceChildren();
-  const welcome = document.createElement("div");
-  welcome.className = "welcome";
-  const heading = document.createElement("h2");
-  heading.textContent = cleanName;
-  const p = document.createElement("p");
-  p.textContent = "Беседа создана только в текущей вкладке. Подключение базы будет следующим этапом.";
-  welcome.append(heading, p);
-  messages.append(welcome);
-}
-
-$("#messageForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const text = input.value.trim();
-  if (!text) return;
-  addMessage(text);
-  input.value = "";
-  input.style.height = "34px";
+  const button=$(".send-button");button.disabled=true;
+  try{const {data,error}=await sb.from("ft_messages").insert({conversation_id:activeId,sender_id:user.id,content}).select("id,conversation_id,sender_id,content,created_at").single();if(error)throw error;renderMessage(data);input.value="";input.style.height="34px";}
+  catch(e){fail("Сообщение не отправлено",e);}finally{button.disabled=false;input.focus();}
 });
-
-input.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    $("#messageForm").requestSubmit();
-  }
+input.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&!ev.shiftKey){ev.preventDefault();$("#messageForm").requestSubmit();}});
+input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,130)+"px";});
+$("#newChatBtn").addEventListener("click",createChat);
+$("#joinChatBtn").addEventListener("click",joinChat);
+$("#mobileMenuBtn").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
+$("#profileBtn").addEventListener("click",()=>{
+  if(!user){dialogBox("Профиль",authError||"Подключаем авторизацию…","Повторить",initializeAuth);return;}
+  dialogBox("Анонимный аккаунт","ID сессии: "+user.id+"\n\nСохраняй данные сайта, чтобы не потерять сессию. Восстановление аккаунта не реализовано. Сквозного шифрования нет — не отправляй секретные данные.","Скопировать ID",()=>navigator.clipboard.writeText(user.id));
 });
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, 130) + "px";
-});
-
-$("#newChatBtn").addEventListener("click", createChat);
-$("#mobileMenuBtn").addEventListener("click", () => $("#sidebar").classList.toggle("open"));
-$("#profileBtn").addEventListener("click", () => {
-  if (!authUser) {
-    showDialog("Профиль", authError || "Подключаем анонимную авторизацию Supabase…", "Повторить подключение", initializeAuth);
-    return;
-  }
-  showDialog("Анонимный аккаунт", `ID сессии: ${authUser.id}\n\nСессия сохраняется в этом браузере. Восстановление аккаунта по ID и секрету ещё не реализовано. Если очистить данные браузера, доступ к этой сессии можно потерять. Сообщения пока остаются локальными и не синхронизируются.`, "Скопировать ID сессии", () => navigator.clipboard?.writeText(authUser.id).catch(() => {}));
-});
-$("#infoBtn").addEventListener("click", () => showDialog("О FunText", "Это начальный UI-прототип. Сейчас переписка не отправляется на сервер, не шифруется сквозным шифрованием и не проходит через Tor.", "Понятно", () => {}));
-$("#attachBtn").addEventListener("click", () => showDialog("Вложения", "Загрузка файлов и безопасный предпросмотр HTML ещё не реализованы. Добавим их после подключения базы и правил доступа.", "Понятно", () => {}));
-
-
-async function initializeAuth() {
-  const connectionLabel = document.querySelector(".connection span:last-child");
-  const profileName = document.querySelector("#profileBtn .profile-meta strong");
-  const profileId = document.querySelector("#profileBtn .profile-meta small");
-  const avatar = document.querySelector("#profileBtn .user-avatar");
-
-  if (!supabaseClient) {
-    authError = "Не удалось загрузить клиент Supabase. Проверьте подключение к интернету и конфигурацию.";
-    if (connectionLabel) connectionLabel.textContent = "Supabase недоступен";
-    return;
-  }
-
-  if (connectionLabel) connectionLabel.textContent = "Подключаемся к Supabase…";
-
-  try {
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-    if (sessionError) throw sessionError;
-
-    let user = sessionData.session?.user ?? null;
-    if (!user) {
-      const { data, error } = await supabaseClient.auth.signInAnonymously();
-      if (error) throw error;
-      user = data.user;
-    }
-    if (!user) throw new Error("Supabase не вернул пользователя.");
-
-    authUser = user;
-    authError = null;
-    if (connectionLabel) connectionLabel.textContent = "Анонимная авторизация подключена";
-    if (profileName) profileName.textContent = "Анонимный аккаунт";
-    if (profileId) profileId.textContent = "ID: " + user.id.slice(0, 8) + "…";
-    if (avatar) avatar.textContent = "A";
-  } catch (error) {
-    authError = "Не удалось войти анонимно в Supabase: " + (error?.message || "неизвестная ошибка") +
-      ". Проверьте, что Anonymous Sign-Ins включён в настройках Supabase.";
-    if (connectionLabel) connectionLabel.textContent = "Ошибка авторизации";
-    if (profileName) profileName.textContent = "Не подключено";
-    if (profileId) profileId.textContent = "Нажмите для подробностей";
-    console.error("FunText Supabase auth error:", error);
-  }
+$("#infoBtn").addEventListener("click",()=>dialogBox("О FunText","Облачные беседы работают через Supabase. «Избранное» хранится локально. Сейчас нет E2EE, Tor-маршрутизации или гарантии анонимности от инфраструктуры и сетевых операторов.","Понятно",()=>{}));
+$("#attachBtn").addEventListener("click",()=>dialogBox("Вложения","Загрузка файлов и HTML-просмотр пока не реализованы. Их нужно добавить отдельно с лимитами и безопасной изоляцией.","Понятно",()=>{}));
+async function initializeAuth(){
+  const status=document.querySelector(".connection span:last-child"),name=$("#profileBtn .profile-meta strong"),pid=$("#profileBtn .profile-meta small"),avatar=$("#profileBtn .user-avatar");
+  if(!sb){authError="Клиент Supabase не загрузился";if(status)status.textContent="Supabase недоступен";return;}
+  if(status)status.textContent="Подключаемся к Supabase…";
+  try{
+    const {data:s,error:se}=await sb.auth.getSession();if(se)throw se;let u=s.session?.user||null;
+    if(!u){const {data,error}=await sb.auth.signInAnonymously();if(error)throw error;u=data.user;}
+    if(!u)throw new Error("Supabase не вернул пользователя");
+    user=u;authError=null;if(status)status.textContent="Supabase подключён";if(name)name.textContent="Анонимный аккаунт";if(pid)pid.textContent="ID: "+u.id.slice(0,8)+"…";if(avatar)avatar.textContent="A";
+    try{await loadChats();}catch(e){fail("Не удалось загрузить беседы",e);}
+    if(activeId===SAVED)showNotes();
+  }catch(e){authError=e.message||"Ошибка авторизации";if(status)status.textContent="Ошибка авторизации";if(name)name.textContent="Не подключено";if(pid)pid.textContent="Нажмите для подробностей";console.error(e);}
 }
-
-initializeAuth();
+drawChats();initializeAuth();
