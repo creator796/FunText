@@ -300,7 +300,7 @@ async function selectChat(id){
   activeId=id;await stopLive();
   if(id===SAVED){activeName="Избранное";$("#currentTitle").textContent=activeName;$("#currentSubtitle").textContent="Личные заметки · только в этом браузере";$("#currentAvatar").textContent="★";showNotes();drawChats();return;}
   const c=chats.find(x=>x.id===id);if(!c||!sb)return;activeName=c.title;
-  $("#currentTitle").textContent=c.title;$("#currentSubtitle").textContent="Облачная беседа · синхронизация";$("#currentAvatar").textContent=(c.title||"Б").slice(0,1).toUpperCase();
+  $("#currentTitle").textContent=c.title;$("#currentSubtitle").textContent="Облачная беседа · текст E2EE";$("#currentAvatar").textContent=(c.title||"Б").slice(0,1).toUpperCase();
   welcome(c.title,"Загружаем сообщения…");drawChats();
   if(innerWidth<=720)$("#sidebar").classList.remove("open");
   const {data,error}=await sb.from("ft_messages").select("id,conversation_id,sender_id,content,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(500);
@@ -381,7 +381,7 @@ $("#mobileMenuBtn").addEventListener("click",()=>$("#sidebar").classList.toggle(
 $("#settingsBtn").addEventListener("click", openSettings);
 $("#profileBtn").addEventListener("click",()=>{
   if(!user){dialogBox("Профиль",authError||"Подключаем авторизацию…","Повторить",initializeAuth);return;}
-  dialogBox("Анонимный аккаунт","ID сессии: "+user.id+"\n\nСохраняй данные сайта, чтобы не потерять сессию. Восстановление аккаунта не реализовано. Сквозного шифрования нет — не отправляй секретные данные.","Скопировать ID",()=>navigator.clipboard.writeText(user.id));
+  dialogBox("Анонимный аккаунт","ID сессии: "+user.id+"\n\nСохраняй данные сайта, чтобы не потерять сессию. Текст новых сообщений шифруется в браузере AES-256-GCM. Вложения и метаданные не E2EE; встроенного Tor нет.","Скопировать ID",()=>navigator.clipboard.writeText(user.id));
 });
 async function showConversationInfo(){
   if(activeId===SAVED){
@@ -402,13 +402,13 @@ async function showConversationInfo(){
   copy.textContent="Скопировать приглашение";
   copy.onclick=async()=>{if(!storedKey){alert("Сначала создай или импортируй ключ E2EE.");return;}const bundle=makeInviteBundle(chat,storedKey);try{await navigator.clipboard.writeText(bundle);copy.textContent="Скопировано";}catch(e){const range=document.createRange();range.selectNodeContents(code);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);copy.textContent="Выдели приглашение и скопируй";}};
   codeActions.append(copy);
+  const isOwner=chat.created_by===user?.id;
   const keyActions=document.createElement("div");keyActions.className="group-info-actions";
   const importKey=document.createElement("button");importKey.type="button";importKey.className="dialog-secondary";importKey.textContent="Импортировать ключ";
   importKey.onclick=async()=>{const raw=prompt("Вставь полное защищённое приглашение вида КОД.КЛЮЧ от владельца. Передавай его только через доверенный канал.");if(!raw)return;const bundle=parseInviteBundle(raw);if(!bundle||bundle.inviteCode!==String(chat.invite_code).toUpperCase()){alert("Приглашение не подходит этой беседе или имеет неверный формат.");return;}try{const bytes=base64UrlToBytes(bundle.rawKey);if(bytes.length!==32)throw new Error("Неверная длина ключа");await crypto.subtle.importKey("raw",bytes,{name:"AES-GCM"},false,["encrypt","decrypt"]);localStorage.setItem(e2eeStorageKey(chat.id),bundle.rawKey);await selectChat(chat.id);await showConversationInfo();}catch(e){fail("Не удалось импортировать ключ",e);}};
   keyActions.append(importKey);
   if(isOwner&&!storedKey){const createKey=document.createElement("button");createKey.type="button";createKey.className="dialog-primary";createKey.textContent="Создать ключ E2EE";createKey.onclick=async()=>{try{const {rawKey}=await generateConversationKey(chat.id);await showConversationInfo();alert("Ключ создан. Скопируй защищённое приглашение и передай участникам отдельно от публичных каналов.");}catch(e){fail("Не удалось создать ключ",e);}};keyActions.append(createKey);}
 
-  const isOwner=chat.created_by===user?.id;
   if(isOwner){
     const rotate=document.createElement("button");rotate.type="button";rotate.className="dialog-secondary";rotate.textContent="Создать новый код";
     rotate.onclick=async()=>{if(!confirm("Старый код перестанет работать. Продолжить?"))return;rotate.disabled=true;try{const {data,error}=await sb.rpc("ft_rotate_invite_code",{p_conversation_id:chat.id});if(error)throw error;await loadChats();await showConversationInfo();}catch(e){fail("Не удалось обновить код",e);}finally{rotate.disabled=false;}};
