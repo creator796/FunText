@@ -7,3 +7,11 @@
 .message-author{display:block;color:#a8bfff;font-size:10px;margin-bottom:5px}
 .send-button:disabled{opacity:.5;cursor:wait}
 .simple-dialog p{white-space:pre-wrap;overflow-wrap:anywhere}
+
+.attachment-card{align-self:flex-start;display:flex;flex-direction:column;gap:7px;width:min(100%,420px);padding:12px 14px;border:1px solid #2b3952;border-radius:12px;background:#101a2a;color:var(--text);overflow-wrap:anywhere}
+.attachment-card strong{font-size:12px;font-weight:650}
+.attachment-card small{font-size:10px;color:var(--muted)}
+.attachment-actions{display:flex;gap:8px;flex-wrap:wrap}
+.attachment-action{padding:7px 10px;border:1px solid #2b3c5b;border-radius:8px;background:#172744;color:#c5d5f7;font-size:11px}
+.attachment-action:hover{background:#21375b}
+.html-preview{display:block;width:min(100%,800px);height:min(65vh,620px);border:1px solid var(--line);border-radius:10px;background:#fff}
